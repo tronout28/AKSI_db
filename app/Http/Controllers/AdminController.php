@@ -2,19 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin;
 use Illuminate\Http\Request;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Validator;
 
 
-class UserController extends Controller
+class AdminController extends Controller
 {
 
-    
-
-    public function register(Request $request)
+    public function Adminregister(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
@@ -23,20 +19,20 @@ class UserController extends Controller
             'job_tittle' => 'required|string',
         ]);
 
-        $user = new User([
+        $admin = new Admin([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'job_tittle' => $request->job_tittle,
         ]);
-        $user->save();
+        $admin->save();
 
         return response()->json([
-            'message' => 'Successfully created user!',
+            'message' => 'Successfully created admin!',
         ], 201);
     }
 
-    public function login(Request $request)
+    public function Adminlogin(Request $request)
     {
         $request->validate([
             'login' => 'required|string',
@@ -46,76 +42,76 @@ class UserController extends Controller
             'password.required' => 'Password is required.',
         ]);
     
-        $user = User::where('email', $request->login)
+        $admin = Admin::where('email', $request->login)
                     ->orWhere('name', $request->login)
                     ->first();
     
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $admin || ! Hash::check($request->password, $admin->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'The provided credentials are incorrect.',
             ], 401);
         }
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $admin->createToken('auth_token')->plainTextToken;
     
         return response()->json([
             'success' => true,
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user->only(['id', 'name', 'email']), 
+            'admin' => $admin->only(['id', 'name', 'email']), 
         ]);
-    }
+    } 
 
-    public function details()
+    public function Admindetails()
     {
-        $user = auth()->user();
-        $user = User::where('id', $user->id)->first();
+        $admin = auth()->user();
+        $admin = Admin::where('id', $admin->id)->first();
         return response()->json([
             'success' => true,
-            'message' => 'User details',
-            'user' => $user,
+            'message' => 'Admin details',
+            'admin' => $admin,
         ], 200);
     }
 
-    public function logout(Request $request)
+
+    public function Adminlogout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-
+        
 
         return response()->json([
             'message' => 'Successfully logged out',
         ]);
     }
 
-    public function updateimage(Request $request)
+    public function Adminupdateimage(Request $request)
     {
         $request->validate([
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
         ]);
 
-        $user = $request->user();
+        $admin = $request->user();
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time().'.'.$image->extension();
-            $image->move(public_path('images-user'), $imageName);
+            $image->move(public_path('images-admin'), $imageName);
     
-            $user->image = $imageName;
+            $admin->image = $imageName;
         
-            if ($user->image && file_exists(public_path('images-user/'.$user->image))) {
-                unlink(public_path('images-user/'.$user->image));
+            if ($admin->image && file_exists(public_path('images-admin/'.$admin->image))) {
+                unlink(public_path('images-admin/'.$admin->image));
             }
         }
-        $user->save();
+        $admin->save();
 
         return response()->json([
             'message' => 'Image updated successfully',
-            'image' => $user->image,
-
+            'image' => $admin->image,
         ]);
     }
 
-    public function changepassword(Request $request)
+    public function Adminchangepassword(Request $request)
     {
         $request->validate([
             'current_password' => 'required|string',
@@ -125,22 +121,22 @@ class UserController extends Controller
             'new_password.min' => 'New password must be at least 6 characters long.',
         ]);
 
-        $user = $request->user();
+        $admin = $request->user();
 
-        if (! Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $admin->password)) {
             return response()->json([
                 'message' => 'The provided current password is incorrect.',
             ], 401);
         }
 
-        if (Hash::check($request->new_password, $user->password)) {
+        if (Hash::check($request->new_password, $admin->password)) {
             return response()->json([
                 'message' => 'New password cannot be the same as the current password.',
             ], 400);
         }
 
-        $user->password = Hash::make($request->new_password); 
-        $user->save();
+        $admin->password = Hash::make($request->new_password); 
+        $admin->save();
 
         return response()->json([
             'message' => 'Password changed successfully.',
