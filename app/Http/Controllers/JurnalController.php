@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Jurnal;
+
+class JurnalController extends Controller
+{
+    public function index()
+    {
+        $user = auth()->user();
+        $jurnals = Jurnal::where('user_id', $user->id)->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'List jurnal',
+            'data' => $jurnals,
+        ], 200);
+    }
+
+    public function show($id)
+    {
+        $user = auth()->user();
+        $jurnal = Jurnal::where('user_id', $user->id)->where('id', $id)->first();
+
+        if (!$jurnal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jurnal not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail jurnal',
+            'data' => $jurnal,
+        ], 200);
+    }
+
+    public function input(Request $request)
+    {
+        $user = auth()->user();
+        
+        $request->validate([
+            'name_title' => 'required|string',
+            'activity' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
+        ]);
+
+        $imageName = null;
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension(); 
+            $image->move(public_path('jurnal'), $imageName); 
+        }
+
+        $jurnal = new Jurnal([
+            'user_id' => $user->id,
+            'name_title' => $request->name_title,
+            'activity' => $request->activity,
+            'image' => $imageName, 
+        ]);
+        
+        $jurnal->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jurnal created',
+            'data' => $jurnal,
+        ], 201);
+    }
+
+
+    public function update(Request $request, $id)
+    {
+        $user = auth()->user();
+        $jurnal = Jurnal::where('user_id', $user->id)->where('id', $id)->first();
+
+        if (!$jurnal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jurnal not found',
+            ], 404);
+        }
+
+        $request->validate([
+            'name_title' => 'nullable|string',
+            'activity' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($jurnal->image && file_exists(public_path('jurnal/' . $jurnal->image))) {
+                unlink(public_path('jurnal/' . $jurnal->image));
+            }
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension();
+            $image->move(public_path('jurnal'), $imageName);
+            
+            $jurnal->image = $imageName;
+        }
+
+        $jurnal->name_title = $request->name_title ?? $jurnal->name_title;
+        $jurnal->activity = $request->activity ?? $jurnal->activity;
+
+        $jurnal->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jurnal updated',
+            'data' => $jurnal,
+        ], 200);
+    }
+
+
+    public function delete($id)
+    {
+        $user = auth()->user();
+        $jurnal = Jurnal::where('user_id', $user->id)->where('id', $id)->first();
+
+        if (!$jurnal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jurnal not found',
+            ], 404);
+        }
+        Storage::delete('public/jurnal/'.basename($jurnal->image));
+        $jurnal->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jurnal deleted',
+        ], 200);
+    }
+
+
+}
