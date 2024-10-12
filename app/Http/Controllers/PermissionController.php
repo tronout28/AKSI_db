@@ -50,7 +50,7 @@ class PermissionController extends Controller
     {
         $request->validate([
             'title' => 'required|string',
-            'symptoms' => 'required|string',
+            'reason' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
         ]);
 
