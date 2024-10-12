@@ -55,3 +55,35 @@ Route::get('/jurnal/{filename}', function ($filename) {
 
     return $response;
 });
+
+Route::get('/sickness/{filename}', function ($filename) {
+    $path = public_path('sickness/'.$filename);
+
+    if (! File::exists($path)) {
+        abort(404);
+    }
+
+    $file = File::get($path);
+    $type = File::mimeType($path);
+
+    $response = Response::make($file, 200);
+    $response->header('Content-Type', $type);
+
+    return $response;
+});
+
+Route::get('/permission/{filename}', function ($filename) {
+    $path = public_path('permission/'.$filename);
+
+    if (! File::exists($path)) {
+        abort(404);
+    }
+
+    $file = File::get($path);
+    $type = File::mimeType($path);
+
+    $response = Response::make($file, 200);
+    $response->header('Content-Type', $type);
+
+    return $response;
+});
