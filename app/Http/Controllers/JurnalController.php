@@ -136,5 +136,42 @@ class JurnalController extends Controller
         ], 200);
     }
 
+    public function viewJurnalByTimeRange(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'range' => 'required|in:daily,weekly,monthly',
+        ]);
+
+        $user_id = $request->user_id;
+
+        $range = $request->range;
+        $query = Jurnal::where('user_id', $user_id);
+
+        if ($range == 'daily') {
+            $query->whereDate('created_at', today());
+        } elseif ($range == 'weekly') {
+            $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+        } elseif ($range == 'monthly') {
+            $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
+        }
+
+        $jurnals = $query->get();
+
+        if ($jurnals->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No jurnal found for the selected range',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jurnals for the selected range',
+            'data' => $jurnals,
+        ], 200);
+    }
+
+
 
 }

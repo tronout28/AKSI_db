@@ -15,7 +15,10 @@ Route::group(['prefix' => 'user'], function () {
 
 Route::group(['prefix' => 'admin'], function () {
     Route::get('/list-user', [UserController::class, 'index']);
+    Route::get('/viewjurnal', [JurnalController::class, 'viewJurnalByTimeRange'])->middleware('auth:sanctum');
+    Route::put('/update-user/{id}', [UserController::class, 'edit'])->middleware('auth:sanctum');
     Route::post('/register-user', [UserController::class, 'register']);
+    Route::delete('/delete-user/{id}', [UserController::class, 'delete'])->middleware('auth:sanctum');
     Route::post('/register', [AdminController::class, 'Adminregister']);
     Route::post('/login', [AdminController::class, 'Adminlogin']);
     Route::get('/details', [AdminController::class, 'Admindetails'])->middleware('auth:sanctum');

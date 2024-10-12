@@ -40,6 +40,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Successfully created user!',
+            'user' => $user,
         ], 201);
     }
 
@@ -70,6 +71,26 @@ class UserController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user->only(['id', 'name', 'email']), 
+        ]);
+    }
+
+    public function edit(Request $request)
+    {
+        $request->validate([
+            'name' => 'nullable|string',
+            'email' => 'nullable|email',
+            'job_tittle' => 'nullable|string',
+        ]);
+
+        $user = User::find($request->user()->id);
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->job_tittle = $request->job_tittle;
+        $user->save();
+
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => $user,
         ]);
     }
 
@@ -151,6 +172,16 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Password changed successfully.',
+        ]);
+    }
+
+    public function delete(Request $request)
+    {
+        $user = User::find($request->user()->id);
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User deleted successfully',
         ]);
     }
 }
