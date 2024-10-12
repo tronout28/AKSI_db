@@ -14,6 +14,7 @@ Route::group(['prefix' => 'user'], function () {
 });
 
 Route::group(['prefix' => 'admin'], function () {
+    Route::get('/list-user', [UserController::class, 'index']);
     Route::post('/register-user', [UserController::class, 'register']);
     Route::post('/register', [AdminController::class, 'Adminregister']);
     Route::post('/login', [AdminController::class, 'Adminlogin']);
