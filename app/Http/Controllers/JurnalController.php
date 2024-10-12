@@ -140,38 +140,65 @@ class JurnalController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'range' => 'required|in:daily,weekly,monthly',
         ]);
 
         $user_id = $request->user_id;
 
-        $range = $request->range;
-        $query = Jurnal::where('user_id', $user_id);
+        // Retrieve journals for today
+        $todayJournals = Jurnal::where('user_id', $user_id)
+            ->whereDate('created_at', today())
+            ->get();
 
-        if ($range == 'daily') {
-            $query->whereDate('created_at', today());
-        } elseif ($range == 'weekly') {
-            $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-        } elseif ($range == 'monthly') {
-            $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
-        }
+        // Retrieve journals for the current week
+        $weeklyJournals = Jurnal::where('user_id', $user_id)
+            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->get();
 
-        $jurnals = $query->get();
+        // Retrieve journals for the current month
+        $monthlyJournals = Jurnal::where('user_id', $user_id)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->get();
 
-        if ($jurnals->isEmpty()) {
+        // Check if any of the journals are empty
+        if ($todayJournals->isEmpty() && $weeklyJournals->isEmpty() && $monthlyJournals->isEmpty()) {
             return response()->json([
-                'success' => false,
-                'message' => 'No jurnal found for the selected range',
+                'message' => 'No jurnal found for today, this week, or this month',
+                'data' => [
+                    'today' => [
+                        'count' => $todayJournals->count(),
+                        'jurnals' => $todayJournals,
+                    ],
+                    'weekly' => [
+                        'count' => $weeklyJournals->count(),
+                        'jurnals' => $weeklyJournals,
+                    ],
+                    'monthly' => [
+                        'count' => $monthlyJournals->count(),
+                        'jurnals' => $monthlyJournals,
+                    ],
+                ]
             ], 404);
         }
 
+        // Return the journal data for today, weekly, and monthly
         return response()->json([
-            'success' => true,
-            'message' => 'Jurnals for the selected range',
-            'data' => $jurnals,
+            'message' => 'Jurnals data retrieved successfully',
+            'data' => [
+                'today' => [
+                    'count' => $todayJournals->count(),
+                    'jurnals' => $todayJournals,
+                ],
+                'weekly' => [
+                    'count' => $weeklyJournals->count(),
+                    'jurnals' => $weeklyJournals,
+                ],
+                'monthly' => [
+                    'count' => $monthlyJournals->count(),
+                    'jurnals' => $monthlyJournals,
+                ],
+            ]
         ], 200);
     }
-
-
 
 }
