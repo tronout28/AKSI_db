@@ -59,9 +59,12 @@ class AttendanceController extends Controller
         $attendance->status = Carbon::parse($attendance->check_in_time)->gt($cutoffTime) ? 'Terlambat' : 'Tepat Waktu';
         
         return $attendance;
+       
     });
 
-    return response()->json($attendances, 200);
+    return response()->json([
+        'attendances' => $attendances,
+    ], 200);
 }
 
 
