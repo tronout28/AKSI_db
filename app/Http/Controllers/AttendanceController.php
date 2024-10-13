@@ -51,19 +51,24 @@ class AttendanceController extends Controller
     }
 
     public function getAllAttendances()
-    {
-        $attendances = Attendance::with('user')->get()->map(function($attendance) {
-            $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->format('h:i A');
-            return $attendance;
-        });
+{
+    $attendances = Attendance::with('user')->get()->map(function($attendance) {
+        $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->format('h:i A');
+        
+        $cutoffTime = Carbon::today('Asia/Jakarta')->setTime(8, 0);
+        $attendance->status = Carbon::parse($attendance->check_in_time)->gt($cutoffTime) ? 'Terlambat' : 'Tepat Waktu';
+        
+        return $attendance;
+    });
 
-        return response()->json($attendances, 200);
-    }
+    return response()->json($attendances, 200);
+}
+
 
     public function getAttendanceByUserId($userId)
     {
         $attendances = Attendance::with('user')->where('user_id', $userId)->get();
-       
+
         $monthlyCount = $attendances->groupBy(function($attendance) {
             return Carbon::parse($attendance->check_in_time)->format('Y-m'); 
         })->map(function($group) {
@@ -74,8 +79,13 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Tidak ada data absensi untuk user ini.'], 404);
         }
     
-        $attendances = $attendances->map(function($attendance) {
+        $cutoffTime = Carbon::today('Asia/Jakarta')->setTime(8, 0);
+    
+        $attendances = $attendances->map(function($attendance) use ($cutoffTime) {
             $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->format('h:i A');
+
+            $attendance->status = Carbon::parse($attendance->check_in_time)->gt($cutoffTime) ? 'Terlambat' : 'Tepat Waktu';
+            
             return $attendance;
         });
     
@@ -84,6 +94,7 @@ class AttendanceController extends Controller
             'attendances' => $attendances,
         ], 200);
     }
+    
     
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
