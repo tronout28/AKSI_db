@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\SicknessController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\AttendanceController;
 
 Route::group(['prefix' => 'user'], function () {
     Route::get('/list-sakit', [SicknessController::class, 'indexUser'])->middleware('auth:sanctum');
@@ -58,3 +59,8 @@ Route::group(['prefix' => 'jurnal'], function () {
     Route::delete('/delete/{id}', [JurnalController::class, 'delete'])->middleware('auth:sanctum');
 });
 
+Route::group(['prefix' => 'attendance', 'middleware' => 'auth:sanctum'], function () {
+    Route::post('/', [AttendanceController::class, 'store']);
+    Route::get('/get-all', [AttendanceController::class, 'getAllAttendances']);
+    Route::get('/get-user/{userId}', [AttendanceController::class, 'getAttendanceByUserId']);
+});

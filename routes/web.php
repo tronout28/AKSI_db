@@ -87,3 +87,7 @@ Route::get('/permission/{filename}', function ($filename) {
 
     return $response;
 });
+
+Route::get('/test-gd', function () {
+    return response()->file(public_path('test_gd.php'));
+});
