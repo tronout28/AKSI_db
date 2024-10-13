@@ -58,4 +58,5 @@ class User extends Authenticatable
             get: fn ($image) => $image ? url('/images-user/'.$image) : null,
         );
     }
+
 }
