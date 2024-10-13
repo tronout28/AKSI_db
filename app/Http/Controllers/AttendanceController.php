@@ -29,12 +29,13 @@ class AttendanceController extends Controller
         // Menentukan apakah check-in terlambat atau tepat waktu
         $lateCheckIn = $checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // Menyimpan data absensi ke database
+        // Menyimpan data absensi ke database, termasuk waktu yang sudah diformat
         $attendance = Attendance::create([
             'user_id' => Auth::id(),
             'latitude' => $userLat,
             'longitude' => $userLong,
-            'check_in_time' => $checkInTime, // Tetap simpan dalam Asia/Jakarta
+            'check_in_time' => $checkInTime,
+            'formatted_check_in_time' => $formattedCheckInTime, // Simpan formatted time di database
             'status' => $lateCheckIn,
         ]);
 
@@ -44,7 +45,7 @@ class AttendanceController extends Controller
         return response()->json([
             'message' => 'Absensi berhasil!',
             'status' => $lateCheckIn,
-            'formatted_check_in_time' => $formattedCheckInTime, // Menampilkan check-in time yang sesuai
+            'formatted_check_in_time' => $formattedCheckInTime, 
             'attendance' => $attendance,
             'user' => [
                 'name' => $user->name,
@@ -57,26 +58,22 @@ class AttendanceController extends Controller
     }
 }
 
+
 public function getAllAttendances()
 {
-    $attendances = Attendance::with('user')->get()->map(function($attendance) {
-        $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->timezone('Asia/Jakarta')->format('h:i A');
-        return $attendance;
-    });
+    $attendances = Attendance::with('user')->get(); // Ambil langsung formatted_check_in_time dari database
 
     return response()->json([
         'attendances' => $attendances,
     ], 200);
 }
 
-
 public function getAttendanceByUserId($userId)
 {
     $attendances = Attendance::with('user')->where('user_id', $userId)->get();
 
-    // Menghitung jumlah absensi per bulan
     $monthlyCount = $attendances->groupBy(function($attendance) {
-        return Carbon::parse($attendance->check_in_time)->timezone('Asia/Jakarta')->format('Y-m');
+        return Carbon::parse($attendance->check_in_time)->format('Y-m');
     })->map(function($group) {
         return $group->count();
     });
@@ -85,17 +82,12 @@ public function getAttendanceByUserId($userId)
         return response()->json(['message' => 'Tidak ada data absensi untuk user ini.'], 404);
     }
 
-    // Format waktu check-in dan pastikan status absensi tetap
-    $attendances = $attendances->map(function($attendance) {
-        $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->timezone('Asia/Jakarta')->format('h:i A');
-        return $attendance;
-    });
-
     return response()->json([
         'monthly_count' => $monthlyCount,
         'attendances' => $attendances,
     ], 200);
 }
+    
 
 
     // Fungsi untuk menghitung jarak antara dua titik (koordinat) menggunakan rumus Haversine
