@@ -10,7 +10,7 @@ class JurnalController extends Controller
 {
     public function index()
     {
-        $user = auth()->use r();
+        $user = auth()->user();
         $jurnals = Jurnal::where('user_id', $user->id)->get();
 
         return response()->json([
