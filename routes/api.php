@@ -57,6 +57,8 @@ Route::group(['prefix' => 'jurnal'], function () {
     Route::post('/input', [JurnalController::class, 'input'])->middleware('auth:sanctum');
     Route::put('/update/{id}', [JurnalController::class, 'update'])->middleware('auth:sanctum');
     Route::delete('/delete/{id}', [JurnalController::class, 'delete'])->middleware('auth:sanctum');
+    Route::get('/jurnals', [JurnalController::class, 'getAllJournals'])->middleware('auth:sanctum');
+
 });
 
 Route::group(['prefix' => 'attendance', 'middleware' => 'auth:sanctum'], function () {

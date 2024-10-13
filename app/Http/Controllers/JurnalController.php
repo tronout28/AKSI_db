@@ -188,5 +188,28 @@ class JurnalController extends Controller
                 ],
             ]
         ], 200);
+
+        
     }    
+   
+    public function getAllJurnals()
+{
+    $jurnals = Jurnal::with('user:id,name,email')->get();
+
+    if ($jurnals->isEmpty()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No journals found',
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'List of all journals retrieved successfully',
+        'data' => $jurnals,
+    ], 200);
+}
+
+
+
 }
