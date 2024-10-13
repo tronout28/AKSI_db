@@ -27,13 +27,7 @@ class AttendanceController extends Controller
         $formattedCheckInTime = $checkInTime->format('h:i A');
 
         // Menentukan apakah check-in terlambat atau tepat waktu
-        if ($checkInTime->between(Carbon::today('Asia/Jakarta')->setTime(1, 0), Carbon::today('Asia/Jakarta')->setTime(8, 0))) {
-            $lateCheckIn = 'Tepat Waktu';
-        } else if ($checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0))) {
-            $lateCheckIn = 'Terlambat';
-        } else {
-            $lateCheckIn = 'Tepat Waktu'; // Sebagai pengaman, jika sebelum jam 1 dianggap tepat waktu
-        }
+        $lateCheckIn = $checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0)) ? 'Terlambat' : 'Tepat Waktu';
 
         // Menyimpan data absensi ke database
         $attendance = Attendance::create([
@@ -63,11 +57,9 @@ class AttendanceController extends Controller
     }
 }
 
-
 public function getAllAttendances()
 {
     $attendances = Attendance::with('user')->get()->map(function($attendance) {
-        // Mengambil waktu yang sesuai dengan timezone Asia/Jakarta
         $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->timezone('Asia/Jakarta')->format('h:i A');
         return $attendance;
     });
@@ -76,6 +68,7 @@ public function getAllAttendances()
         'attendances' => $attendances,
     ], 200);
 }
+
 
 public function getAttendanceByUserId($userId)
 {
@@ -92,7 +85,7 @@ public function getAttendanceByUserId($userId)
         return response()->json(['message' => 'Tidak ada data absensi untuk user ini.'], 404);
     }
 
-    // Menambahkan formatted_check_in_time
+    // Format waktu check-in dan pastikan status absensi tetap
     $attendances = $attendances->map(function($attendance) {
         $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->timezone('Asia/Jakarta')->format('h:i A');
         return $attendance;
@@ -103,7 +96,6 @@ public function getAttendanceByUserId($userId)
         'attendances' => $attendances,
     ], 200);
 }
-
 
 
     // Fungsi untuk menghitung jarak antara dua titik (koordinat) menggunakan rumus Haversine
