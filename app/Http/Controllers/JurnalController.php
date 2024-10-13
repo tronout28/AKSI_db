@@ -10,7 +10,7 @@ class JurnalController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user = auth()->use r();
         $jurnals = Jurnal::where('user_id', $user->id)->get();
 
         return response()->json([
@@ -138,17 +138,19 @@ class JurnalController extends Controller
 
     public function viewJurnalByTimeRange(Request $request)
     {
-
-        $todayJournals = Jurnal::whereDate('created_at', today())
+        $todayJournals = Jurnal::with('user:id,name,email')
+            ->whereDate('created_at', today())
             ->get();
-
-        $weeklyJournals = Jurnal::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+    
+        $weeklyJournals = Jurnal::with('user:id,name,email')
+            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
             ->get();
-
-        $monthlyJournals = Jurnal::whereMonth('created_at', now()->month)
+    
+        $monthlyJournals = Jurnal::with('user:id,name,email')
+            ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->get();
-
+    
         if ($todayJournals->isEmpty() && $weeklyJournals->isEmpty() && $monthlyJournals->isEmpty()) {
             return response()->json([
                 'message' => 'No jurnal found for today, this week, or this month',
@@ -168,7 +170,7 @@ class JurnalController extends Controller
                 ]
             ], 404);
         }
-
+    
         return response()->json([
             'message' => 'Jurnals data retrieved successfully',
             'data' => [
@@ -186,6 +188,5 @@ class JurnalController extends Controller
                 ],
             ]
         ], 200);
-    }
-
+    }    
 }
