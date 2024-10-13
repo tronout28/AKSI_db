@@ -56,16 +56,17 @@ class AttendanceController extends Controller
         $attendance->formatted_check_in_time = Carbon::parse($attendance->check_in_time)->format('h:i A');
         
         $cutoffTime = Carbon::today('Asia/Jakarta')->setTime(8, 0);
+        
         $attendance->status = Carbon::parse($attendance->check_in_time)->gt($cutoffTime) ? 'Terlambat' : 'Tepat Waktu';
         
         return $attendance;
-       
     });
 
     return response()->json([
         'attendances' => $attendances,
     ], 200);
 }
+
 
 
     public function getAttendanceByUserId($userId)
