@@ -9,7 +9,7 @@ class PermissionController extends Controller
 {
     public function index()
     {
-        $permission = Permission::orderBy('created_at', 'asc')->get();
+        $permission = Permission::with('user')->orderBy('created_at', 'asc')->get();
         return response()->json([
             'success' => true,
             'message' => 'List permission',
