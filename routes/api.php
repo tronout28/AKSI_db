@@ -42,6 +42,7 @@ Route::group(['prefix' => 'admin'], function () {
     Route::post('/tolak-izin/{id}', [PermissionController::class, 'notallowed'])->middleware('auth:sanctum');
 
     Route::get('/viewjurnal', [JurnalController::class, 'viewJurnalByTimeRange'])->middleware('auth:sanctum');
+    Route::get('/getalljurnal', [JurnalController::class, 'getAllJurnals'])->middleware('auth:sanctum');
 
     Route::post('/register', [AdminController::class, 'Adminregister']);
     Route::post('/login', [AdminController::class, 'Adminlogin']);
