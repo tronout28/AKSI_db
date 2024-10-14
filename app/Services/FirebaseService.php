@@ -14,7 +14,7 @@ class FirebaseService
 
     public function __construct()
     {
-        $factory = (new Factory)->withServiceAccount(base_path('firebase-auth.json'));
+        $factory = (new Factory)->withServiceAccount(__DIR__ . '/../../firebase-auth.json');
         $this->messaging = $factory->createMessaging();
     }
 
@@ -32,12 +32,11 @@ class FirebaseService
     }
 
     public function sendNotification($deviceToken, $title, $body, $imageUrl, $data = [])
-{
-    if (!$deviceToken) {
-        return 'Device token is null or invalid.';
-    }
+    {
+        if (!$deviceToken) {
+            return 'Device token is null or invalid.';
+        }
 
-    try {
         $notification = Notification::create($title, $body, $imageUrl);
 
         $message = CloudMessage::withTarget('token', $deviceToken)
@@ -45,54 +44,31 @@ class FirebaseService
             ->withData($data);
 
         $notify = $this->messaging->send($message);
-
-        // Simpan notifikasi ke database
         $this->writeNotification($deviceToken, $title, $body, $imageUrl);
 
         return $notify;
-    } catch (\Kreait\Firebase\Exception\MessagingException $e) {
-        // Tangani error saat pengiriman pesan
-        return 'Failed to send notification: ' . $e->getMessage();
-    } catch (\Throwable $e) {
-        // Tangani error lain
-        return 'An error occurred: ' . $e->getMessage();
     }
-}
 
+    public function sendNotificationToAll($title, $body, $imageUrl, $data = [])
+    {
+        $tokens = User::whereNotNull('notification_token')->pluck('notification_token');
+        $notification = Notification::create($title, $body, $imageUrl);
 
-public function sendNotificationToAll($title, $body, $imageUrl, $data = [])
-{
-    $tokens = User::whereNotNull('notification_token')->pluck('notification_token');
-    $notification = Notification::create($title, $body, $imageUrl);
+        foreach ($tokens as $deviceToken) {
+            if (!$deviceToken) {
+                continue;
+            }
 
-    $successful = 0; // Counter sukses
-    $failed = 0;     // Counter gagal
-
-    foreach ($tokens as $deviceToken) {
-        if (!$deviceToken) {
-            $failed++;
-            continue;
-        }
-
-        try {
             $message = CloudMessage::withTarget('token', $deviceToken)
                 ->withNotification($notification)
                 ->withData($data);
-
             $this->messaging->send($message);
-            $successful++;
-        } catch (\Kreait\Firebase\Exception\MessagingException $e) {
-            $failed++;
-            // Log atau tangani error di sini jika diperlukan
         }
+
+        $this->writeNotification("", $title, $body, $imageUrl);
+
+        return 'Notifications sent to all users.';
     }
-
-    // Simpan ke database jika diperlukan
-    $this->writeNotification("", $title, $body, $imageUrl);
-
-    return "Notifications sent. Successful: {$successful}, Failed: {$failed}.";
-}
-
 
     // public function sendToAdmin($notification_token, $title, $body, $imageUrl, $data = [])
     // {
