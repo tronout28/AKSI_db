@@ -210,8 +210,5 @@ class JurnalController extends Controller
             'data' => $jurnals,
         ], 200);
     }
-    
-
-
 
 }
