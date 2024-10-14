@@ -17,6 +17,7 @@ class AttendanceController extends Controller
     protected $maxDistance = 1;
 
     protected $firebaseService;
+
     public function __construct(FirebaseService $firebaseService)
     {
         $this->firebaseService = $firebaseService;
@@ -27,7 +28,9 @@ class AttendanceController extends Controller
         $user = Auth::user();
         $today = Carbon::today('Asia/Jakarta');
 
-        $existingAttendance = Attendance::where('user_id', $user->id)->whereDate('check_in_time', $today)->first();
+        $existingAttendance = Attendance::where('user_id', $user->id)
+            ->whereDate('check_in_time', $today)
+            ->first();
 
         if ($existingAttendance) {
             return response()->json([
@@ -35,9 +38,13 @@ class AttendanceController extends Controller
             ], 403);
         }
 
-        $sickness = Sickness::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+        $sickness = Sickness::where('user_id', $user->id)
+            ->whereDate('created_at', $today)
+            ->first();
 
-        $permission = Permission::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+        $permission = Permission::where('user_id', $user->id)
+            ->whereDate('created_at', $today)
+            ->first();
 
         if ($sickness || $permission) {
             return response()->json([
@@ -65,9 +72,9 @@ class AttendanceController extends Controller
             ]);
 
             if($attendance) {
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', ' Anda telah absen dan telah berada di area kantor' , '');
-            }elseif($lateCheckIn == 'Terlambat'){
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', ' Anda telah absen dan terlambat masuk kantor' , '');
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', 'Anda telah absen dan berada di area kantor', '');
+            } elseif($lateCheckIn == 'Terlambat') {
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', 'Anda telah absen dan terlambat masuk kantor', '');
             }
 
             return response()->json([
@@ -82,13 +89,10 @@ class AttendanceController extends Controller
                 ]
             ], 200);
         } else {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen karena berada di luar area kantor', '');
             return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', ' Anda tidak bisa absen karena berada di luar area kantor' , '');
         }
     }
-
-
-
 
     public function getAllAttendances()
     {
@@ -119,8 +123,6 @@ class AttendanceController extends Controller
         ], 200);
     }
     
-
-
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371; 
