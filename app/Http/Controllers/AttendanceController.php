@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Attendance;
-use Auth;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Sickness;
+use App\Models\Permission;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -14,86 +16,93 @@ class AttendanceController extends Controller
     protected $maxDistance = 0.1;
 
     public function store(Request $request)
-{
-    $userLat = $request->latitude;
-    $userLong = $request->longitude;
+    {
+    $user = Auth::user();
+    $today = Carbon::today('Asia/Jakarta');
 
-    // Menghitung jarak antara user dan kantor
-    $distance = $this->calculateDistance($this->officeLat, $this->officeLong, $userLat, $userLong);
+    $sickness = Sickness::where('user_id', $user->id)->whereDate('created_at', $today)->first();
 
-    if ($distance <= $this->maxDistance) {
-        // Menggunakan timezone Asia/Jakarta untuk waktu check-in
-        $checkInTime = Carbon::now('Asia/Jakarta');
-        $formattedCheckInTime = $checkInTime->format('h:i A');
+    $permission = Permission::where('user_id', $user->id)->whereDate('created_at', $today)->first();
 
-        // Menentukan apakah check-in terlambat atau tepat waktu
-        $lateCheckIn = $checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0)) ? 'Terlambat' : 'Tepat Waktu';
+    if ($sickness || $permission) {
+        return response()->json([
+            'message' => 'Anda sudah mengajukan izin, tidak bisa melakukan absensi.',
+        ], 403);
+    }
 
-        // Menyimpan data absensi ke database, termasuk waktu yang sudah diformat
-        $attendance = Attendance::create([
-            'user_id' => Auth::id(),
-            'latitude' => $userLat,
-            'longitude' => $userLong,
-            'check_in_time' => $checkInTime,
-            'formatted_check_in_time' => $formattedCheckInTime, // Simpan formatted time di database
-            'status' => $lateCheckIn,
-        ]);
+        $userLat = $request->latitude;
+        $userLong = $request->longitude;
 
-        // Mengambil data user saat ini
-        $user = Auth::user();
+        $distance = $this->calculateDistance($this->officeLat, $this->officeLong, $userLat, $userLong);
+
+        if ($distance <= $this->maxDistance) {
+            $checkInTime = Carbon::now('Asia/Jakarta');
+            $formattedCheckInTime = $checkInTime->format('h:i A');
+
+            $lateCheckIn = $checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0)) ? 'Terlambat' : 'Tepat Waktu';
+
+            $attendance = Attendance::create([
+                'user_id' => Auth::id(),
+                'latitude' => $userLat,
+                'longitude' => $userLong,
+                'check_in_time' => $checkInTime,
+                'formatted_check_in_time' => $formattedCheckInTime, // Simpan formatted time di database
+                'status' => $lateCheckIn,
+            ]);
+
+            $user = Auth::user();
+
+            return response()->json([
+                'message' => 'Absensi berhasil!',
+                'status' => $lateCheckIn,
+                'formatted_check_in_time' => $formattedCheckInTime, 
+                'attendance' => $attendance,
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'job_title' => $user->job_title,
+                ]
+            ], 200);
+        } else {
+            return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
+        }
+    }
+
+
+    public function getAllAttendances()
+    {
+        $attendances = Attendance::with('user')->get(); 
 
         return response()->json([
-            'message' => 'Absensi berhasil!',
-            'status' => $lateCheckIn,
-            'formatted_check_in_time' => $formattedCheckInTime, 
-            'attendance' => $attendance,
-            'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'job_title' => $user->job_title,
-            ]
+            'attendances' => $attendances,
         ], 200);
-    } else {
-        return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
-    }
-}
-
-
-public function getAllAttendances()
-{
-    $attendances = Attendance::with('user')->get(); // Ambil langsung formatted_check_in_time dari database
-
-    return response()->json([
-        'attendances' => $attendances,
-    ], 200);
-}
-
-public function getAttendanceByUserId($userId)
-{
-    $attendances = Attendance::with('user')->where('user_id', $userId)->get();
-
-    $monthlyCount = $attendances->groupBy(function($attendance) {
-        return Carbon::parse($attendance->check_in_time)->format('Y-m');
-    })->map(function($group) {
-        return $group->count();
-    });
-
-    if ($attendances->isEmpty()) {
-        return response()->json(['message' => 'Tidak ada data absensi untuk user ini.'], 404);
     }
 
-    return response()->json([
-        'monthly_count' => $monthlyCount,
-        'attendances' => $attendances,
-    ], 200);
-}
+    public function getAttendanceByUserId($userId)
+    {
+        $attendances = Attendance::with('user')->where('user_id', $userId)->get();
+
+        $monthlyCount = $attendances->groupBy(function($attendance) {
+            return Carbon::parse($attendance->check_in_time)->format('Y-m');
+        })->map(function($group) {
+            return $group->count();
+        });
+
+        if ($attendances->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada data absensi untuk user ini.'], 404);
+        }
+
+        return response()->json([
+            'monthly_count' => $monthlyCount,
+            'attendances' => $attendances,
+        ], 200);
+    }
     
 
 
-    // Fungsi untuk menghitung jarak antara dua titik (koordinat) menggunakan rumus Haversine
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
-        $earthRadius = 6371; // Radius bumi dalam kilometer
+        $earthRadius = 6371; 
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
