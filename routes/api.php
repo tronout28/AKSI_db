@@ -7,6 +7,7 @@ use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\SicknessController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\NotificationController;
 
 Route::group(['prefix' => 'user'], function () {
     Route::get('/list-sakit', [SicknessController::class, 'indexUser'])->middleware('auth:sanctum');
@@ -42,6 +43,7 @@ Route::group(['prefix' => 'admin'], function () {
     Route::post('/tolak-izin/{id}', [PermissionController::class, 'notallowed'])->middleware('auth:sanctum');
 
     Route::get('/viewjurnal', [JurnalController::class, 'viewJurnalByTimeRange'])->middleware('auth:sanctum');
+    Route::get('/getalljurnal', [JurnalController::class, 'getAllJurnals']);
 
     Route::post('/register', [AdminController::class, 'Adminregister']);
     Route::post('/login', [AdminController::class, 'Adminlogin']);
@@ -59,6 +61,12 @@ Route::group(['prefix' => 'jurnal'], function () {
     Route::delete('/delete/{id}', [JurnalController::class, 'delete'])->middleware('auth:sanctum');
     Route::get('/jurnals', [JurnalController::class, 'getAllJournals'])->middleware('auth:sanctum');
 
+});
+
+Route::group(['prefix' => 'notifications', 'middleware' => ['auth:sanctum']], function () {
+    Route::post('/send', [NotificationController::class, 'sendNotification']);
+    Route::post('/send-to-all', [NotificationController::class, 'sendNotificationToAll']);
+    Route::get('/all', [NotificationController::class, 'getNotifications']);
 });
 
 Route::group(['prefix' => 'attendance', 'middleware' => 'auth:sanctum'], function () {

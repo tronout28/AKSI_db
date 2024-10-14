@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Sickness;
+use App\Models\Attendance;
+use Carbon\Carbon;
 
 class SicknessController extends Controller
 {
     public function index()
     {
-        $sickness = Sickness::orderBy('created_at', 'asc')->get();
+        $sickness = Sickness::with('user')->orderBy('created_at', 'asc')->get();
         return response()->json([
             'success' => true,
             'message' => 'List sickness',
@@ -53,6 +55,19 @@ class SicknessController extends Controller
             'symptoms' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
         ]);
+
+        $user = auth()->user();
+        $today = Carbon::today('Asia/Jakarta');
+    
+        // Cek apakah sudah absen hari ini
+        $attendance = Attendance::where('user_id', $user->id)->whereDate('check_in_time', $today)->first();
+    
+        if ($attendance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah absen hari ini, tidak bisa mengajukan izin. sakit',
+            ], 403);
+        }
 
         $imageName = null;
 

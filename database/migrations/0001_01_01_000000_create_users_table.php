@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('role')->default('user');
             $table->string('image')->nullable();
+            $table->string('notification_token')->nullable();
             $table->string('job_tittle');
             $table->rememberToken();
             $table->timestamps();
