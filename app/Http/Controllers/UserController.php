@@ -28,6 +28,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|string|confirmed',
             'job_tittle' => 'required|string',
+            'notification_token' => 'nullable|string',
         ]);
 
         $user = new User([
@@ -35,6 +36,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'job_tittle' => $request->job_tittle,
+            'notification_token' => $request->notification_token,
         ]);
         $user->save();
 
@@ -65,6 +67,8 @@ class UserController extends Controller
             ], 401);
         }
         $token = $user->createToken('auth_token')->plainTextToken;
+        $user->notification_token = $request->notification_token;
+        $user->save();
     
         return response()->json([
             'success' => true,
@@ -105,13 +109,16 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function logout(Request $request)
+    public function logout()
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = User::where('email', auth()->user()->email)->first();
+        $user->notification_token = null;
+        $user->save();
+        $user->tokens()->delete();
 
 
         return response()->json([
-            'message' => 'Successfully logged out',
+            'message' => 'Logged out',
         ]);
     }
 

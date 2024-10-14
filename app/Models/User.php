@@ -26,6 +26,7 @@ class User extends Authenticatable
         'email',
         'password',
         'image',
+        'notification_token',
         'job_tittle',
     ];
 

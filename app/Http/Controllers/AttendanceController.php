@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Sickness;
 use App\Models\Permission;
+use App\Services\FirebaseService;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -15,24 +16,37 @@ class AttendanceController extends Controller
     protected $officeLong = 110.352091;
     protected $maxDistance = 1;
 
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function store(Request $request)
     {
-    $user = Auth::user();
-    $today = Carbon::today('Asia/Jakarta');
+        $user = Auth::user();
+        $today = Carbon::today('Asia/Jakarta');
 
-    $sickness = Sickness::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+        $existingAttendance = Attendance::where('user_id', $user->id)->whereDate('check_in_time', $today)->first();
 
-    $permission = Permission::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+        if ($existingAttendance) {
+            return response()->json([
+                'message' => 'Anda sudah melakukan absensi hari ini.',
+            ], 403);
+        }
 
-    if ($sickness || $permission) {
-        return response()->json([
-            'message' => 'Anda sudah mengajukan izin, tidak bisa melakukan absensi.',
-        ], 403);
-    }
+        $sickness = Sickness::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+
+        $permission = Permission::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+
+        if ($sickness || $permission) {
+            return response()->json([
+                'message' => 'Anda sudah mengajukan izin hari ini, tidak bisa melakukan absensi.',
+            ], 403);
+        }
 
         $userLat = $request->latitude;
         $userLong = $request->longitude;
-
         $distance = $this->calculateDistance($this->officeLat, $this->officeLong, $userLat, $userLong);
 
         if ($distance <= $this->maxDistance) {
@@ -46,11 +60,15 @@ class AttendanceController extends Controller
                 'latitude' => $userLat,
                 'longitude' => $userLong,
                 'check_in_time' => $checkInTime,
-                'formatted_check_in_time' => $formattedCheckInTime, // Simpan formatted time di database
+                'formatted_check_in_time' => $formattedCheckInTime,
                 'status' => $lateCheckIn,
             ]);
 
-            $user = Auth::user();
+            if($attendance) {
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', ' Anda telah absen dan telah berada di area kantor' , '');
+            }elseif($lateCheckIn == 'Terlambat'){
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', ' Anda telah absen dan terlambat masuk kantor' , '');
+            }
 
             return response()->json([
                 'message' => 'Absensi berhasil!',
@@ -65,8 +83,11 @@ class AttendanceController extends Controller
             ], 200);
         } else {
             return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', ' Anda tidak bisa absen karena berada di luar area kantor' , '');
         }
     }
+
+
 
 
     public function getAllAttendances()
