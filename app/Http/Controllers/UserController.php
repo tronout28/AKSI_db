@@ -36,7 +36,6 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'job_tittle' => $request->job_tittle,
-            'notification_token' => $request->notification_token,
         ]);
         $user->save();
 
@@ -51,6 +50,7 @@ class UserController extends Controller
         $request->validate([
             'login' => 'required|string',
             'password' => 'required|string',
+            'notification_token' => 'nullable|string',
         ], [
             'login.required' => 'Email or username is required.',
             'password.required' => 'Password is required.',
@@ -67,8 +67,11 @@ class UserController extends Controller
             ], 401);
         }
         $token = $user->createToken('auth_token')->plainTextToken;
-        $user->notification_token = $request->notification_token;
-        $user->save();
+        
+        if ($request->filled('notification_token')) {
+            $user->notification_token = $request->notification_token;
+            $user->save();
+        }
     
         return response()->json([
             'success' => true,
