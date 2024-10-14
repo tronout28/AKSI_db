@@ -11,7 +11,7 @@ class AttendanceController extends Controller
 {
     protected $officeLat = -7.685925;
     protected $officeLong = 110.352091;
-    protected $maxDistance = 0.1;
+        
 
     public function store(Request $request)
 {
