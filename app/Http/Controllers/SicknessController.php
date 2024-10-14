@@ -9,7 +9,7 @@ class SicknessController extends Controller
 {
     public function index()
     {
-        $sickness = Sickness::orderBy('created_at', 'asc')->get();
+        $sickness = Sickness::with('user')->orderBy('created_at', 'asc')->get();
         return response()->json([
             'success' => true,
             'message' => 'List sickness',
