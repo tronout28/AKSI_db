@@ -102,7 +102,7 @@ class PermissionController extends Controller
         $permission = Permission::find($id);
 
         $request->validate([
-            'note' => 'required|string',
+            'note' => 'nullable|string',
         ]);
 
         if (!$permission) {
@@ -128,7 +128,7 @@ class PermissionController extends Controller
         $permission = Permission::find($id);
 
         $request->validate([
-            'note' => 'required|string',
+            'note' => 'nullable|string',
         ]);
 
         if (!$permission) {
