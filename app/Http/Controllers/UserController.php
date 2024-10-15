@@ -88,15 +88,15 @@ class UserController extends Controller
         ]);
     }
 
-    public function edit(Request $request)
+    public function edit(Request $request, $id)
     {
         $request->validate([
-            'name' => 'nullable|string',
-            'email' => 'nullable|email',
-            'job_tittle' => 'nullable|string',
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email,'.$id,
+            'job_tittle' => 'required|string',
         ]);
 
-        $user = User::find($request->user()->id);
+        $user = User::find($id);
         $user->name = $request->name;
         $user->email = $request->email;
         $user->job_tittle = $request->job_tittle;
