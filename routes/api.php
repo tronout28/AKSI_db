@@ -8,6 +8,7 @@ use App\Http\Controllers\SicknessController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\HomewardController;
 
 Route::group(['prefix' => 'user'], function () {
     Route::get('/list-sakit', [SicknessController::class, 'indexUser'])->middleware('auth:sanctum');
@@ -24,13 +25,14 @@ Route::group(['prefix' => 'user'], function () {
     Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
     Route::put('/update-image', [UserController::class, 'updateimage'])->middleware('auth:sanctum');
     Route::post('/change-password', [UserController::class, 'changepassword'])->middleware('auth:sanctum');
+    Route::get('/history', [UserController::class, 'getMonthlyHistory'])->middleware('auth:sanctum');
 });
 
 Route::group(['prefix' => 'admin'], function () {
     Route::get('/list-user', [UserController::class, 'index']);
     Route::post('/register-user', [UserController::class, 'register']);
     Route::put('/update-user/{id}', [UserController::class, 'edit'])->middleware('auth:sanctum');
-    Route::delete('/delete-user/{id}', [UserController::class, 'delete'])->middleware('auth:sanctum');
+    Route::delete('/delete-user/{id}', [UserController::class, 'delete']);
 
     Route::get('/list-sakit', [SicknessController::class, 'index']);
     Route::get('/detail-sakit/{id}', [SicknessController::class, 'detail']);
@@ -73,4 +75,10 @@ Route::group(['prefix' => 'attendance', 'middleware' => 'auth:sanctum'], functio
     Route::post('/', [AttendanceController::class, 'store']);
     Route::get('/get-all', [AttendanceController::class, 'getAllAttendances']);
     Route::get('/get-user/{userId}', [AttendanceController::class, 'getAttendanceByUserId']);
+});
+
+Route::group(['prefix' => 'homeward', 'middleware' => 'auth:sanctum'], function () {
+    Route::post('/', [HomewardController::class, 'store']);
+    Route::get('/get-all', [HomewardController::class, 'getAllHomeward']);
+    Route::get('/get-user/{userId}', [HomewardController::class, 'getHomewardByUserId']);
 });
