@@ -17,6 +17,7 @@ class AttendanceController extends Controller
     protected $maxDistance = 1;
 
     protected $firebaseService;
+
     public function __construct(FirebaseService $firebaseService)
     {
         $this->firebaseService = $firebaseService;
@@ -27,23 +28,29 @@ class AttendanceController extends Controller
         $user = Auth::user();
         $today = Carbon::today('Asia/Jakarta');
 
-        $existingAttendance = Attendance::where('user_id', $user->id)->whereDate('check_in_time', $today)->first();
+        $existingAttendance = Attendance::where('user_id', $user->id)
+            ->whereDate('check_in_time', $today)
+            ->first();
 
         if ($existingAttendance) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', ' Anda tidak bisa absen lagi karena sudah absen hari ini' , '');
             return response()->json([
                 'message' => 'Anda sudah melakukan absensi hari ini.',
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', ' Anda tidak bisa absen lagi karena sudah absen hari ini' , ''),
             ], 403);
         }
 
-        $sickness = Sickness::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+        $sickness = Sickness::where('user_id', $user->id)
+            ->whereDate('created_at', $today)
+            ->first();
 
-        $permission = Permission::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+        $permission = Permission::where('user_id', $user->id)
+            ->whereDate('created_at', $today)
+            ->first();
 
         if ($sickness || $permission) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin', ' Anda tidak bisa absen karena sudah mengajukan izin' , '');
             return response()->json([
                 'message' => 'Anda sudah mengajukan izin hari ini, tidak bisa melakukan absensi.',
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin', ' Anda tidak bisa absen karena sudah mengajukan izin' , ''),
             ], 403);
         }
 
@@ -66,10 +73,10 @@ class AttendanceController extends Controller
                 'status' => $lateCheckIn,
             ]);
 
-            if($attendance) {
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', ' Anda telah absen dan telah berada di area kantor' , '');
-            }elseif($lateCheckIn == 'Terlambat'){
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', ' Anda telah absen dan terlambat masuk kantor' , '');
+            if ($attendance) {
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', 'Anda telah absen dan berada di area kantor', '');
+            } elseif ($lateCheckIn == 'Terlambat') {
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', 'Anda telah absen dan terlambat masuk kantor', '');
             }
 
             return response()->json([
@@ -84,8 +91,8 @@ class AttendanceController extends Controller
                 ]
             ], 200);
         } else {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen karena berada di luar area kantor', '');
             return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', ' Anda tidak bisa absen karena berada di luar area kantor' , '');
         }
     }
 
@@ -215,7 +222,6 @@ class AttendanceController extends Controller
         ], 200);
     }
 
-
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371; 
@@ -229,6 +235,4 @@ class AttendanceController extends Controller
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return $earthRadius * $c;
     }
-
-    
 }
