@@ -102,7 +102,7 @@ class SicknessController extends Controller
         $sickness = Sickness::find($id);
 
         $request->validate([
-            'note' => 'required|string',
+            'note' => 'nullable|string',
         ]);
 
         if (!$sickness) {
@@ -128,7 +128,7 @@ class SicknessController extends Controller
         $sickness = Sickness::find($id);
 
         $request->validate([
-            'note' => 'required|string',
+            'note' => 'nullable|string',
         ]);
 
         if (!$sickness) {
