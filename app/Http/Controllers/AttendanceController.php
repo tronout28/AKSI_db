@@ -33,6 +33,7 @@ class AttendanceController extends Controller
             ->first();
 
         if ($existingAttendance) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', ' Anda tidak bisa absen lagi karena sudah absen hari ini' , '');
             return response()->json([
                 'message' => 'Anda sudah melakukan absensi hari ini.',
             ], 403);
@@ -47,6 +48,7 @@ class AttendanceController extends Controller
             ->first();
 
         if ($sickness || $permission) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin', ' Anda tidak bisa absen karena sudah mengajukan izin' , '');
             return response()->json([
                 'message' => 'Anda sudah mengajukan izin hari ini, tidak bisa melakukan absensi.',
             ], 403);
@@ -71,9 +73,9 @@ class AttendanceController extends Controller
                 'status' => $lateCheckIn,
             ]);
 
-            if($attendance) {
+            if ($attendance) {
                 $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', 'Anda telah absen dan berada di area kantor', '');
-            } elseif($lateCheckIn == 'Terlambat') {
+            } elseif ($lateCheckIn == 'Terlambat') {
                 $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', 'Anda telah absen dan terlambat masuk kantor', '');
             }
 
@@ -126,7 +128,78 @@ class AttendanceController extends Controller
             'attendances' => $attendances,
         ], 200);
     }
-    
+
+    public function filterAttendances(Request $request)
+    {
+        $filter = $request->input('filter', 'all');
+        
+        $today = Carbon::today('Asia/Jakarta');
+        $query = Attendance::with('user');
+
+        switch ($filter) {
+            case 'daily':
+                $query->whereDate('check_in_time', $today);
+                break;
+
+            case 'weekly':
+                $startOfWeek = Carbon::now('Asia/Jakarta')->startOfWeek();
+                $endOfWeek = Carbon::now('Asia/Jakarta')->endOfWeek();
+                $query->whereBetween('check_in_time', [$startOfWeek, $endOfWeek]);
+                break;
+
+            case 'monthly':
+                $query->whereMonth('check_in_time', $today->month)
+                    ->whereYear('check_in_time', $today->year);
+                break;
+
+            case 'all':
+            default:
+                break;
+        }
+
+        $attendances = $query->get();
+        $totalAttendances = $attendances->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Filtered attendances',
+            'filter' => $filter,
+            'total' => $totalAttendances,
+            'attendances' => $attendances,
+        ], 200);
+    }
+
+    public function getWeeklyAttendanceChart()
+    {
+        $today = Carbon::today('Asia/Jakarta');
+        $startDate = $today->copy()->subDays(6); 
+
+        $attendances = Attendance::whereBetween('check_in_time', [$startDate, $today])
+            ->selectRaw('DATE(check_in_time) as date, COUNT(*) as total')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $dates = [];
+        for ($i = 0; $i <= 6; $i++) {
+            $dates[] = $startDate->copy()->addDays($i)->format('Y-m-d');
+        }
+
+        $chartData = [];
+        foreach ($dates as $date) {
+            $attendanceForDate = $attendances->firstWhere('date', $date);
+            $chartData[] = [
+                'date' => $date,
+                'total' => $attendanceForDate ? $attendanceForDate->total : 0,
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Data absensi untuk 7 hari terakhir',
+            'chart' => $chartData,
+        ], 200);
+    }
+
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371; 

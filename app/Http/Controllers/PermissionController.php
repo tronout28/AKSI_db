@@ -6,10 +6,19 @@ use Illuminate\Http\Request;
 use App\Models\Permission;
 use App\Models\Attendance;
 use Illuminate\Validation\Rule;
+use App\Services\FirebaseService;
+use App\Models\User;
 use Carbon\Carbon;
 
 class PermissionController extends Controller
 {
+
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function index()
     {
         $today = \Carbon\Carbon::today(); 
@@ -72,6 +81,7 @@ class PermissionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda sudah absen hari ini, tidak bisa mengajukan izin.',
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', ' Anda tidak bisa mengajukan izin karena sudah absen' , ''),
             ], 403);
         }
 
@@ -91,6 +101,10 @@ class PermissionController extends Controller
         ]);
         $permission->save();
 
+        if ($permission) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Permohonan izin berhasil', 'Permohonan izin anda berhasil dikirim', '');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Successfully input permission!',
@@ -108,15 +122,22 @@ class PermissionController extends Controller
         $permission = Permission::find($id);
 
         if (!$permission) {
-            return response()->json(['message' => 'Data sakit tidak ditemukan.'], 404);
+            return response()->json(['message' => 'Data izin tidak ditemukan.'], 404);
         }
 
         $permission->allowed = $request->allowed;
         $permission->note = $request->note;
         $permission->save(); 
 
+        $user = User::find($permission->user_id);
+        if($permission->allowed == 'Diterima'){
+            $this->firebaseService->sendNotification($user->notification_token, 'Permohonan izin diterima', 'Permohonan izin anda diterima', '');
+        } elseif($permission->allowed == 'Ditolak'){
+            $this->firebaseService->sendNotification($user->notification_token, 'Permohonan izin ditolak', 'Permohonan izin anda ditolak', '');
+        }
+
         return response()->json([
-            'message' => 'Status permohonan sakit berhasil diperbarui.',
+            'message' => 'Status permohonan izin berhasil diperbarui.',
             'permission' => $permission,
         ], 200);
     }

@@ -46,6 +46,9 @@ Route::group(['prefix' => 'admin'], function () {
     Route::get('/viewjurnal', [JurnalController::class, 'viewJurnalByTimeRange'])->middleware('auth:sanctum');
     Route::get('/getalljurnal', [JurnalController::class, 'getAllJurnals']);
 
+    Route::get('/filter-attendances', [AttendanceController::class, 'filterAttendances']);
+    Route::get('/chartattendance', [AttendanceController::class, 'getWeeklyAttendanceChart']);
+
     Route::post('/register', [AdminController::class, 'Adminregister']);
     Route::post('/login', [AdminController::class, 'Adminlogin']);
     Route::get('/details', [AdminController::class, 'Admindetails'])->middleware('auth:sanctum');
@@ -61,7 +64,6 @@ Route::group(['prefix' => 'jurnal'], function () {
     Route::put('/update/{id}', [JurnalController::class, 'update'])->middleware('auth:sanctum');
     Route::delete('/delete/{id}', [JurnalController::class, 'delete'])->middleware('auth:sanctum');
     Route::get('/jurnals', [JurnalController::class, 'getAllJournals'])->middleware('auth:sanctum');
-
 });
 
 Route::group(['prefix' => 'notifications', 'middleware' => ['auth:sanctum']], function () {
