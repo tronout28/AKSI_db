@@ -83,7 +83,7 @@ class HomewardController extends Controller
         ], 200);
     }
 
-    public function getAttendanceByUserId($userId)
+    public function getHomewardByUserId($userId)
     {
         $homeward = Homeward::with('user')->where('user_id', $userId)->get();
 
