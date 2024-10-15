@@ -5,11 +5,19 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Sickness;
 use App\Models\Attendance;
+use App\Services\FirebaseService;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 
 class SicknessController extends Controller
 {
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function index()
     {
         $today = \Carbon\Carbon::today();
@@ -72,6 +80,7 @@ class SicknessController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda sudah absen hari ini, tidak bisa mengajukan izin. sakit',
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', ' Anda tidak bisa mengajukan izin sakit' , ''),
             ], 403);
         }
 
@@ -90,6 +99,10 @@ class SicknessController extends Controller
             'image' => $imageName,
         ]);
         $sickness->save();
+
+        if ($sickness) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin sakit', ' Anda telah mengajukan izin sakit, mohon tunggu persetujuan dari admin' , '');
+        }
 
         return response()->json([
             'success' => true,
@@ -114,6 +127,14 @@ class SicknessController extends Controller
         $sickness->allowed = $request->allowed;
         $sickness->note = $request->note;
         $sickness->save(); 
+
+        $user = User::find($sickness->user_id);
+        
+        if ($sickness->allowed == 'Diterima') {
+            $this->firebaseService->sendNotification($user->notification_token, 'Izin sakit diterima', 'Izin sakit anda telah disetujui', '');
+        } elseif ($sickness->allowed == 'Ditolak') {
+            $this->firebaseService->sendNotification($user->notification_token, 'Izin sakit ditolak', 'Izin sakit anda ditolak', '');
+        }
 
         return response()->json([
             'message' => 'Status permohonan sakit berhasil diperbarui.',

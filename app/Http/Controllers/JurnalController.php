@@ -4,10 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Services\FirebaseService;
 use App\Models\Jurnal;
 
 class JurnalController extends Controller
 {
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function index()
     {
         $user = auth()->user();
@@ -67,8 +74,11 @@ class JurnalController extends Controller
             'activity' => $request->activity,
             'image' => $imageName, 
         ]);
-        
         $jurnal->save();
+
+        if ($jurnal) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Jurnal baru telah dibuat', 'Jurnal anda sudah dikirim ke guru', '');
+        }
 
         return response()->json([
             'success' => true,
@@ -112,6 +122,10 @@ class JurnalController extends Controller
 
         $jurnal->save();
 
+        if ($jurnal) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Jurnal telah diupdate', 'Jurnal anda sudah diupdate', '');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Jurnal updated',
@@ -133,6 +147,10 @@ class JurnalController extends Controller
         }
         Storage::delete('public/jurnal/'.basename($jurnal->image));
         $jurnal->delete();
+
+        if ($jurnal) {
+            $this->firebaseService->sendNotification($user->notification_token, 'Jurnal telah dihapus', 'Jurnal anda sudah dihapus', '');
+        }
 
         return response()->json([
             'success' => true,

@@ -34,6 +34,7 @@ class HomewardController extends Controller
         if (!$existingAttendance) {
             return response()->json([
                 'message' => 'Anda belum melakukan absensi masuk, tidak bisa absen pulang.',
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda belum absen masuk', 'Anda tidak bisa absen pulang karena belum absen masuk', ''),
             ], 403);
         }
 
@@ -73,7 +74,6 @@ class HomewardController extends Controller
         } else {
             // Jika di luar area kantor
             $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen pulang karena berada di luar area kantor', '');
-
             return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
         }
     }
