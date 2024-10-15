@@ -15,14 +15,18 @@ use Illuminate\Support\Facades\Validator;
 class UserController extends Controller
 {
     public function index()
-    {
-        $users = User::all();
-        return response()->json([
-            'success' => true,
-            'message' => 'List user',
-            'data' => $users,
-        ], 200);
-    }
+{
+    $users = User::all();
+    $totalUsers = $users->count();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'List user',
+        'total_users' => $totalUsers,
+        'data' => $users,
+    ], 200);
+}
+
 
     public function register(Request $request)
     {
