@@ -245,13 +245,15 @@ class UserController extends Controller
             return $itemArray;
         });
 
-        // Gabungkan semua data ke dalam satu array
-        $mergedData = $attendanceData->merge($sicknessData)->merge($permissionData);
+        // Convert arrays back to collections before merging
+        $mergedData = collect($attendanceData)
+                        ->merge($sicknessData)
+                        ->merge($permissionData);
 
-        // Urutkan berdasarkan 'created_at' atau 'check_in_time' secara descending (terbaru muncul duluan)
+        // Sort the merged data by 'created_at' or 'check_in_time'
         $sortedData = $mergedData->sortByDesc(function($item) {
             return $item['created_at'] ?? $item['check_in_time'];
-        })->values()->all(); // Menggunakan values() agar mendapatkan kembali index array mulai dari 0
+        })->values()->all(); // Reset index to start from 0
 
         return response()->json([
             'success' => true,
