@@ -84,6 +84,16 @@ class SicknessController extends Controller
             ], 403);
         }
 
+        $existSickness = Sickness::where('user_id', $user->id)->whereDate('created_at', $today)->first();
+
+        if ($existSickness) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah mengajukan izin sakit hari ini',
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin sakit', ' Anda sudah mengajukan izin sakit hari ini' , ''),
+            ], 403);
+        }
+
         $imageName = null;
 
         if ($request->hasFile('image')) {
@@ -129,7 +139,7 @@ class SicknessController extends Controller
         $sickness->save(); 
 
         $user = User::find($sickness->user_id);
-        
+
         if ($sickness->allowed == 'Diterima') {
             $this->firebaseService->sendNotification($user->notification_token, 'Izin sakit diterima', 'Izin sakit anda telah disetujui', '');
         } elseif ($sickness->allowed == 'Ditolak') {
