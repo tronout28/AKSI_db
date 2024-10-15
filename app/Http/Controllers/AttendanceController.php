@@ -129,30 +129,46 @@ class AttendanceController extends Controller
         $today = Carbon::today('Asia/Jakarta');
         $query = Attendance::with('user');
 
-        // Filter berdasarkan parameter
+        // Terapkan filter berdasarkan filter yang dipilih
         switch ($filter) {
-            case 'daily': // Harian (data kehadiran hari ini)
+            case 'daily': // Absensi hari ini
                 $query->whereDate('check_in_time', $today);
                 break;
 
-            case 'weekly': // Mingguan (7 hari terakhir)
-                $startOfWeek = Carbon::now('Asia/Jakarta')->startOfWeek(); // Mulai minggu
-                $endOfWeek = Carbon::now('Asia/Jakarta')->endOfWeek(); // Akhir minggu
+            case 'weekly': // Absensi untuk 7 hari terakhir
+                $startOfWeek = Carbon::now('Asia/Jakarta')->startOfWeek();
+                $endOfWeek = Carbon::now('Asia/Jakarta')->endOfWeek();
                 $query->whereBetween('check_in_time', [$startOfWeek, $endOfWeek]);
                 break;
 
-            case 'monthly': // Bulanan (bulan ini)
+            case 'monthly': // Absensi untuk bulan ini
                 $query->whereMonth('check_in_time', $today->month)
                     ->whereYear('check_in_time', $today->year);
                 break;
 
-            case 'all': // Semua data
+            case 'all': // Tanpa filter, ambil semua absensi
             default:
-                // Tidak ada filter tambahan, mengambil semua data
+                // Tidak ada filter tambahan yang diterapkan
                 break;
         }
 
+        // Ambil data absensi yang difilter
         $attendances = $query->get();
+
+        // Format respons dengan informasi tambahan tentang pengguna
+        $formattedAttendances = $attendances->map(function ($attendance) {
+            return [
+                'user' => [
+                    'name' => $attendance->user->name,
+                    'email' => $attendance->user->email,
+                    'job_tittle' => $attendance->user->job_tittle, // Berikan fallback jika job_title null
+                ],
+                'check_in_time' => Carbon::parse($attendance->check_in_time)->format('Y-m-d H:i:s'), // Memastikan ini instance Carbon
+                'latitude' => $attendance->latitude,
+                'longitude' => $attendance->longitude,
+                'status' => $attendance->status,
+            ];
+        });
 
         $totalAttendances = $attendances->count();
 
@@ -161,32 +177,35 @@ class AttendanceController extends Controller
             'message' => 'Filtered attendances',
             'filter' => $filter,
             'total' => $totalAttendances,
-            'attendances' => $attendances,
+            'attendances' => $formattedAttendances, // Menampilkan hasil yang diformat
         ], 200);
     }
 
-    public function getWeeklyAttendanceChart()
+
+   public function getWeeklyAttendanceChart()
     {
         $today = Carbon::today('Asia/Jakarta');
-        $startDate = $today->copy()->subDays(6); 
+        $startDate = $today->copy()->subDays(6); // Mulai dari 6 hari sebelum hari ini
 
-        $attendances = Attendance::whereBetween('check_in_time', [$startDate, $today])
+        // Query untuk mendapatkan data absensi dalam rentang waktu 7 hari terakhir
+        $attendances = Attendance::whereBetween('check_in_time', [$startDate->startOfDay(), $today->endOfDay()])
             ->selectRaw('DATE(check_in_time) as date, COUNT(*) as total')
             ->groupBy('date')
-            ->orderBy('date')
             ->get();
 
+        // Membuat daftar tanggal dari 7 hari terakhir
         $dates = [];
         for ($i = 0; $i <= 6; $i++) {
-            $dates[] = $startDate->copy()->addDays($i)->format('Y-m-d');
+            $dates[] = $startDate->copy()->addDays($i); // Simpan instance Carbon
         }
 
+        // Mengisi chartData berdasarkan hari, dengan total kehadiran jika ada, atau 0 jika tidak ada
         $chartData = [];
         foreach ($dates as $date) {
-            $attendanceForDate = $attendances->firstWhere('date', $date);
+            $attendanceForDate = $attendances->firstWhere('date', $date->format('Y-m-d')); // Cocokkan berdasarkan tanggal
             $chartData[] = [
-                'date' => $date,
-                'total' => $attendanceForDate ? $attendanceForDate->total : 0,
+                'day' => $date->locale('id')->isoFormat('dddd'), // Format nama hari dalam bahasa Indonesia
+                'total' => $attendanceForDate ? (int) $attendanceForDate->total : 0, // Paksa total menjadi integer
             ];
         }
 
