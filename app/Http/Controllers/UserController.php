@@ -217,13 +217,13 @@ class UserController extends Controller
         $sicknesses = Sickness::where('user_id', $user->id)
                                 ->whereYear('created_at', $year)
                                 ->whereMonth('created_at', $month)
-                                ->where('allowed', true)
+                                ->where('allowed', 'Diterima')
                                 ->get();
 
         $permissions = Permission::where('user_id', $user->id)
                                 ->whereYear('created_at', $year)
                                 ->whereMonth('created_at', $month)
-                                ->where('allowed', true)
+                                ->where('allowed', 'Diterima')
                                 ->get();
 
         // Convert each record type to array and add a "type" attribute to differentiate them
