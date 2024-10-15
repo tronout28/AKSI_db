@@ -31,7 +31,7 @@ Route::group(['prefix' => 'user'], function () {
 Route::group(['prefix' => 'admin'], function () {
     Route::get('/list-user', [UserController::class, 'index']);
     Route::post('/register-user', [UserController::class, 'register']);
-    Route::put('/update-user/{id}', [UserController::class, 'edit'])->middleware('auth:sanctum');
+    Route::put('/update-user/{id}', [UserController::class, 'edit']);
     Route::delete('/delete-user/{id}', [UserController::class, 'delete']);
 
     Route::get('/list-sakit', [SicknessController::class, 'index']);
@@ -78,7 +78,7 @@ Route::group(['prefix' => 'attendance', 'middleware' => 'auth:sanctum'], functio
 });
 
 Route::group(['prefix' => 'homeward', 'middleware' => 'auth:sanctum'], function () {
-    Route::post('/', [HomewardController::class, 'store']);
+    Route::post('/store', [HomewardController::class, 'store']);
     Route::get('/get-all', [HomewardController::class, 'getAllHomeward']);
     Route::get('/get-user/{userId}', [HomewardController::class, 'getHomewardByUserId']);
 });
