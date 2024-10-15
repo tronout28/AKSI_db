@@ -11,11 +11,16 @@ class SicknessController extends Controller
 {
     public function index()
     {
-        $sickness = Sickness::with('user')->orderBy('created_at', 'asc')->get();
+        $today = \Carbon\Carbon::today();
+
+        $sickness = Sickness::with('user')->whereDate('created_at', $today)->orderBy('created_at', 'asc')->get();
+        $totalSicknessToday = $sickness->count();
+
         return response()->json([
             'success' => true,
-            'message' => 'List sickness',
-            'data' => $sickness,
+            'message' => 'List of sickness permissions today',
+            'total_sickness_today' => $totalSicknessToday,  
+            'sickness' => $sickness,    
         ], 200);
     }
 

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Attendance;
+use App\Models\Sickness;
+use App\Models\Permission;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -193,5 +196,65 @@ class UserController extends Controller
         return response()->json([
             'message' => 'User deleted successfully',
         ]);
+    }
+
+    public function getMonthlyHistory(Request $request)
+    {
+        $user = auth()->user();
+        $month = $request->input('month', \Carbon\Carbon::now()->month);
+        $year = $request->input('year', \Carbon\Carbon::now()->year);
+
+        // Fetch attendance, sickness, and permission records
+        $attendances = Attendance::where('user_id', $user->id)
+                                ->whereYear('check_in_time', $year)
+                                ->whereMonth('check_in_time', $month)
+                                ->get();
+
+        $sicknesses = Sickness::where('user_id', $user->id)
+                                ->whereYear('created_at', $year)
+                                ->whereMonth('created_at', $month)
+                                ->where('allowed', true)
+                                ->get();
+
+        $permissions = Permission::where('user_id', $user->id)
+                                ->whereYear('created_at', $year)
+                                ->whereMonth('created_at', $month)
+                                ->where('allowed', true)
+                                ->get();
+
+        // Convert each record type to array and add a "type" attribute to differentiate them
+        $attendanceData = $attendances->map(function($item) {
+            $itemArray = $item->toArray();
+            $itemArray['type'] = 'attendance';
+            return $itemArray;
+        });
+
+        $sicknessData = $sicknesses->map(function($item) {
+            $itemArray = $item->toArray();
+            $itemArray['type'] = 'sickness';
+            return $itemArray;
+        });
+
+        $permissionData = $permissions->map(function($item) {
+            $itemArray = $item->toArray();
+            $itemArray['type'] = 'permission';
+            return $itemArray;
+        });
+
+        // Gabungkan semua data ke dalam satu array
+        $mergedData = $attendanceData->merge($sicknessData)->merge($permissionData);
+
+        // Urutkan berdasarkan 'created_at' atau 'check_in_time' secara descending (terbaru muncul duluan)
+        $sortedData = $mergedData->sortByDesc(function($item) {
+            return $item['created_at'] ?? $item['check_in_time'];
+        })->values()->all(); // Menggunakan values() agar mendapatkan kembali index array mulai dari 0
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Monthly attendance, sickness, and permission data',
+            'month' => $month,
+            'year' => $year,
+            'data' => $sortedData,
+        ], 200);
     }
 }

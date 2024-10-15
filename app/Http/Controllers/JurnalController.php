@@ -11,12 +11,16 @@ class JurnalController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $jurnals = Jurnal::where('user_id', $user->id)->get();
+        $today = \Carbon\Carbon::today();
+
+        $jurnals = Jurnal::with('user') ->where('user_id', $user->id)->whereDate('created_at', $today) ->get();
+        $totalJurnalsToday = $jurnals->count();
 
         return response()->json([
             'success' => true,
-            'message' => 'List jurnal',
-            'data' => $jurnals,
+            'message' => 'List jurnal hari ini',
+            'total_jurnal_today' => $totalJurnalsToday, 
+            'jurnals' => $jurnals, 
         ], 200);
     }
 

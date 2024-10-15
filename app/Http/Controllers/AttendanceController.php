@@ -87,15 +87,16 @@ class AttendanceController extends Controller
         }
     }
 
-
-
-
     public function getAllAttendances()
     {
         $attendances = Attendance::with('user')->get(); 
 
+        $today = Carbon::today('Asia/Jakarta');
+        $todayAttendanceCount = Attendance::whereDate('check_in_time', $today)->count();
+
         return response()->json([
             'attendances' => $attendances,
+            'total_today' => $todayAttendanceCount, 
         ], 200);
     }
 

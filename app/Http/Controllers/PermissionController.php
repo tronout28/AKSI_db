@@ -11,11 +11,16 @@ class PermissionController extends Controller
 {
     public function index()
     {
-        $permission = Permission::with('user')->orderBy('created_at', 'asc')->get();
+        $today = \Carbon\Carbon::today(); 
+
+        $permissions = Permission::with('user')->whereDate('created_at', $today)->orderBy('created_at', 'asc')->get();
+        $totalPermissionsToday = $permissions->count();
+
         return response()->json([
             'success' => true,
-            'message' => 'List permission',
-            'data' => $permission,
+            'message' => 'List of permissions today',
+            'total_permissions_today' => $totalPermissionsToday,
+            'permissions' => $permissions, 
         ], 200);
     }
 
