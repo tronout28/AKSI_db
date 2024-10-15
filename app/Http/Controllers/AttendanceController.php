@@ -23,7 +23,7 @@ class AttendanceController extends Controller
         $this->firebaseService = $firebaseService;
     }
 
-    public function store(Request $request)
+    public function store(Request $request) 
     {
         $user = Auth::user();
         $today = Carbon::today('Asia/Jakarta');
@@ -33,27 +33,32 @@ class AttendanceController extends Controller
             ->first();
 
         if ($existingAttendance) {
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', ' Anda tidak bisa absen lagi karena sudah absen hari ini' , '');
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', 'Anda tidak bisa absen lagi karena sudah absen hari ini', '');
             return response()->json([
                 'message' => 'Anda sudah melakukan absensi hari ini.',
             ], 403);
         }
 
+        // Cek apakah ada izin sakit atau izin lainnya dengan status "Belum Diproses" atau "Diterima"
         $sickness = Sickness::where('user_id', $user->id)
             ->whereDate('created_at', $today)
+            ->whereIn('allowed', ['Belum Diproses', 'Diterima']) // Memeriksa status sakit
             ->first();
 
         $permission = Permission::where('user_id', $user->id)
             ->whereDate('created_at', $today)
+            ->whereIn('allowed', ['Belum Diproses', 'Diterima']) // Memeriksa status izin
             ->first();
 
+        // Jika sakit atau izin "Belum Diproses" atau "Diterima", blokir absensi
         if ($sickness || $permission) {
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin', ' Anda tidak bisa absen karena sudah mengajukan izin' , '');
+            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin', 'Anda tidak bisa absen karena sudah mengajukan izin', '');
             return response()->json([
                 'message' => 'Anda sudah mengajukan izin hari ini, tidak bisa melakukan absensi.',
             ], 403);
         }
 
+        // Cek jarak dan buat record absensi jika memenuhi syarat
         $userLat = $request->latitude;
         $userLong = $request->longitude;
         $distance = $this->calculateDistance($this->officeLat, $this->officeLong, $userLat, $userLong);
@@ -62,6 +67,7 @@ class AttendanceController extends Controller
             $checkInTime = Carbon::now('Asia/Jakarta');
             $formattedCheckInTime = $checkInTime->format('h:i A');
 
+            // Cek apakah terlambat
             $lateCheckIn = $checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0)) ? 'Terlambat' : 'Tepat Waktu';
 
             $attendance = Attendance::create([
@@ -73,6 +79,7 @@ class AttendanceController extends Controller
                 'status' => $lateCheckIn,
             ]);
 
+            // Kirim notifikasi berdasarkan status absensi
             if ($attendance) {
                 $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', 'Anda telah absen dan berada di area kantor', '');
             } elseif ($lateCheckIn == 'Terlambat') {
@@ -82,7 +89,7 @@ class AttendanceController extends Controller
             return response()->json([
                 'message' => 'Absensi berhasil!',
                 'status' => $lateCheckIn,
-                'formatted_check_in_time' => $formattedCheckInTime, 
+                'formatted_check_in_time' => $formattedCheckInTime,
                 'attendance' => $attendance,
                 'user' => [
                     'name' => $user->name,
@@ -91,6 +98,7 @@ class AttendanceController extends Controller
                 ]
             ], 200);
         } else {
+            // Jika di luar area kantor
             $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen karena berada di luar area kantor', '');
             return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
         }
