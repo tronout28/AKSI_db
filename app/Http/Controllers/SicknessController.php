@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Sickness;
 use App\Models\Attendance;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 
 class SicknessController extends Controller
 {
@@ -97,55 +98,27 @@ class SicknessController extends Controller
         ], 201);
     }
     
-    public function allowed(Request $request, $id)
+    public function updateAllowedSickness(Request $request, $id)
     {
-        $sickness = Sickness::find($id);
-
         $request->validate([
+            'allowed' => ['required', Rule::in(['Diterima', 'Ditolak'])],
             'note' => 'nullable|string',
         ]);
 
-        if (!$sickness) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sickness not found',
-            ], 404);
-        }
-
-        $sickness->allowed = true;
-        $sickness->note = $request->note;
-        $sickness->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Sickness allowed',
-            'data' => $sickness,
-        ], 200);
-    }
-
-    public function notallowed(Request $request, $id)
-    {
         $sickness = Sickness::find($id);
 
-        $request->validate([
-            'note' => 'nullable|string',
-        ]);
-
         if (!$sickness) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Sickness not found',
-            ], 404);
+            return response()->json(['message' => 'Data sakit tidak ditemukan.'], 404);
         }
 
-        $sickness->allowed = false;
+        $sickness->allowed = $request->allowed;
         $sickness->note = $request->note;
-        $sickness->save();
+        $sickness->save(); 
 
         return response()->json([
-            'success' => true,
-            'message' => 'Sickness allowed',
-            'data' => $sickness,
+            'message' => 'Status permohonan sakit berhasil diperbarui.',
+            'sickness' => $sickness,
         ], 200);
     }
+
 }

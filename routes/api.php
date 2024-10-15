@@ -36,13 +36,12 @@ Route::group(['prefix' => 'admin'], function () {
 
     Route::get('/list-sakit', [SicknessController::class, 'index']);
     Route::get('/detail-sakit/{id}', [SicknessController::class, 'detail']);
-    Route::post('/izinkan-sakit/{id}', [SicknessController::class, 'allowed'])->middleware('auth:sanctum');
-    Route::post('/tolak-sakit/{id}', [SicknessController::class, 'notallowed'])->middleware('auth:sanctum');
+    Route::post('/sakit-allow/{id}', [SicknessController::class, 'updateAllowedSickness']);
 
     Route::get('/list-izin', [PermissionController::class, 'index']);
     Route::get('/detail-izin/{id}', [PermissionController::class, 'detail']);
-    Route::post('/izinkan-izin/{id}', [PermissionController::class, 'allowed'])->middleware('auth:sanctum');
-    Route::post('/tolak-izin/{id}', [PermissionController::class, 'notallowed'])->middleware('auth:sanctum');
+    Route::post('/izin-allow/{id}', [PermissionController::class, 'updateAllowedPermission']);
+
 
     Route::get('/viewjurnal', [JurnalController::class, 'viewJurnalByTimeRange'])->middleware('auth:sanctum');
     Route::get('/getalljurnal', [JurnalController::class, 'getAllJurnals']);

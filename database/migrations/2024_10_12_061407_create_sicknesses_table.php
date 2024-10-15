@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('symptoms');
             $table->string('image')->nullable();
-            $table->boolean('allowed')->nullable();
+            $table->enum('allowed',['Diterima', 'Ditolak', 'Belum Diproses'])->default('Belum Diproses');
             $table->string('note')->nullable();
             $table->timestamps();
 

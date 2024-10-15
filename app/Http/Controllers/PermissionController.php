@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Permission;
 use App\Models\Attendance;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class PermissionController extends Controller
@@ -85,7 +86,7 @@ class PermissionController extends Controller
         $permission = new Permission([
             'user_id' => auth()->user()->id,
             'title' => $request->title,
-            'reason' => $request->symptoms,
+            'reason' => $request->reason,
             'image' => $imageName,
         ]);
         $permission->save();
@@ -97,55 +98,26 @@ class PermissionController extends Controller
         ], 201);
     }
     
-    public function allowed(Request $request, $id)
+    public function updateAllowedPermission(Request $request, $id)
     {
-        $permission = Permission::find($id);
-
         $request->validate([
+            'allowed' => ['required', Rule::in(['Diterima', 'Ditolak'])],
             'note' => 'nullable|string',
         ]);
 
-        if (!$permission) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Permission not found',
-            ], 404);
-        }
-
-        $permission->allowed = true;
-        $permission->note = $request->note;
-        $permission->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permission allowed',
-            'data' => $permission,
-        ], 200);
-    }
-
-    public function notallowed(Request $request, $id)
-    {
         $permission = Permission::find($id);
 
-        $request->validate([
-            'note' => 'nullable|string',
-        ]);
-
         if (!$permission) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Permission not found',
-            ], 404);
+            return response()->json(['message' => 'Data sakit tidak ditemukan.'], 404);
         }
 
-        $permission->allowed = false;
+        $permission->allowed = $request->allowed;
         $permission->note = $request->note;
-        $permission->save();
+        $permission->save(); 
 
         return response()->json([
-            'success' => true,
-            'message' => 'Permission allowed',
-            'data' => $permission,
+            'message' => 'Status permohonan sakit berhasil diperbarui.',
+            'permission' => $permission,
         ], 200);
     }
 }
