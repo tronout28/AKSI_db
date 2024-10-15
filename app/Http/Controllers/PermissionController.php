@@ -85,6 +85,15 @@ class PermissionController extends Controller
             ], 403);
         }
 
+        $existPermissions = Permission::where('user_id', $user->id)->whereDate('created_at', $today)->count();
+        if ($existPermissions > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah mengajukan izin hari ini.',
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah mengajukan izin', ' Anda tidak bisa mengajukan izin lagi' , ''),
+            ], 403);
+        }
+
         $imageName = null;
 
         if ($request->hasFile('image')) {
