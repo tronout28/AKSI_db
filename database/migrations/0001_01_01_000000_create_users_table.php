@@ -17,10 +17,10 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role',['user', 'mentor']);
             $table->string('image')->nullable();
             $table->string('notification_token')->nullable();
             $table->string('job_tittle');
+            $table->enum('role', ['mentor', 'user']);  // Add role column here
             $table->rememberToken();
             $table->timestamps();
         });
