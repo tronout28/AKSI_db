@@ -15,18 +15,31 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    public function index()
-{
-    $users = User::all();
-    $totalUsers = $users->count();
+    public function index(Request $request)
+    {
+        // Get the 'role' parameter from the request
+        $role = $request->input('role');
 
-    return response()->json([
-        'success' => true,
-        'message' => 'List user',
-        'total_users' => $totalUsers,
-        'data' => $users,
-    ], 200);
-}
+        // Check if 'role' parameter exists and is either 'user' or 'mentor'
+        if ($role === 'user' || $role === 'mentor') {
+            // Filter users based on the role
+            $users = User::where('role', $role)->get();
+        } else {
+            // If no valid role is provided, return all users
+            $users = User::all();
+        }
+
+        // Count the number of users retrieved
+        $totalUsers = $users->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'List user',
+            'total_users' => $totalUsers,
+            'data' => $users,
+        ], 200);
+    }
+
 
 
 public function register(Request $request)
