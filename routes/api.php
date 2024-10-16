@@ -9,6 +9,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\HomewardController;
+use App\Http\Controllers\TugasController;
 
 Route::group(['prefix' => 'user'], function () {
     Route::get('/list-sakit', [SicknessController::class, 'indexUser'])->middleware('auth:sanctum');
@@ -84,4 +85,11 @@ Route::group(['prefix' => 'homeward', 'middleware' => 'auth:sanctum'], function 
     Route::post('/store', [HomewardController::class, 'store']);
     Route::get('/get-all', [HomewardController::class, 'getAllHomeward']);
     Route::get('/get-user/{userId}', [HomewardController::class, 'getHomewardByUserId']);
+});
+
+Route::group(['prefix' => 'tugas'], function () {
+    Route::post('/store', [TugasController::class, 'storeTugas']);
+    Route::get('/get-all', [TugasController::class, 'getAllTugas']);
+    Route::get('/get-user/{userId}', [TugasController::class, 'getUserTugas']);
+    Route::put('/associate-jurnal/{tugasId}', [TugasController::class, 'associateJurnalToTugas']);
 });
