@@ -22,6 +22,11 @@ class Jurnal extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function tugas()
+    {
+        return $this->hasMany(Tugas::class, 'jurnal_id');
+    }
+
     protected function image(): Attribute
     {
         return Attribute::make(
