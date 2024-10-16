@@ -88,6 +88,22 @@ Route::get('/permission/{filename}', function ($filename) {
     return $response;
 });
 
+Route::get('/tugas/{filename}', function ($filename) {
+    $path = public_path('tugas/'.$filename);
+
+    if (! File::exists($path)) {
+        abort(404);
+    }
+
+    $file = File::get($path);
+    $type = File::mimeType($path);
+
+    $response = Response::make($file, 200);
+    $response->header('Content-Type', $type);
+
+    return $response;
+});
+
 Route::get('/test-gd', function () {
     return response()->file(public_path('test_gd.php'));
 });

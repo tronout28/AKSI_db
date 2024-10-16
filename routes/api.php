@@ -89,6 +89,7 @@ Route::group(['prefix' => 'homeward', 'middleware' => 'auth:sanctum'], function 
 
 Route::group(['prefix' => 'tugas'], function () {
     Route::post('/store', [TugasController::class, 'storeTugas']);
+    Route::put('/update-status/{tugasId}', [TugasController::class, 'updatestatusTugas']);
     Route::get('/get-all', [TugasController::class, 'getAllTugas']);
     Route::get('/get-user/{userId}', [TugasController::class, 'getUserTugas']);
     Route::put('/associate-jurnal/{tugasId}', [TugasController::class, 'associateJurnalToTugas']);
