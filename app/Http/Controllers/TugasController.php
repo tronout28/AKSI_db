@@ -14,7 +14,7 @@ class TugasController extends Controller
             'deadline' => 'required|date_format:Y-m-d H:i:s',
             'title' => 'required|string',
             'description' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5000',
         ]);
 
         $imageName = null;
@@ -30,7 +30,7 @@ class TugasController extends Controller
             'deadline' => $request->deadline,
             'title' => $request->title,
             'description' => $request->description,
-            'image' => $request->$imageName,
+            'image' => $imageName,
         ]);
         $tugas->save();
 
