@@ -158,21 +158,21 @@ class JurnalController extends Controller
         ], 200);
     }
 
-    public function viewJurnalByTimeRange(Request $request)
+    public function viewJurnalByTimeRange()
     {
-        $todayJournals = Jurnal::with('user:id,name,email')
+        $todayJournals = Jurnal::with(['user:id,name,email', 'tugas'])
             ->whereDate('created_at', today())
             ->get();
-    
-        $weeklyJournals = Jurnal::with('user:id,name,email')
+
+        $weeklyJournals = Jurnal::with(['user:id,name,email', 'tugas'])
             ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
             ->get();
-    
-        $monthlyJournals = Jurnal::with('user:id,name,email')
+
+        $monthlyJournals = Jurnal::with(['user:id,name,email', 'tugas'])
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->get();
-    
+
         if ($todayJournals->isEmpty() && $weeklyJournals->isEmpty() && $monthlyJournals->isEmpty()) {
             return response()->json([
                 'message' => 'No jurnal found for today, this week, or this month',
@@ -192,7 +192,7 @@ class JurnalController extends Controller
                 ]
             ], 404);
         }
-    
+
         return response()->json([
             'message' => 'Jurnals data retrieved successfully',
             'data' => [
@@ -210,27 +210,27 @@ class JurnalController extends Controller
                 ],
             ]
         ], 200);
-
-        
-    }    
+    }
+   
    
     public function getAllJurnals()
     {
-        // Mengambil semua jurnal
-        $jurnals = Jurnal::with('user:id,name,email')->get();
-    
+        // Get all journals with user and tugas (tasks)
+        $jurnals = Jurnal::with(['user:id,name,email', 'tugas'])->get();
+
         if ($jurnals->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No journals found',
             ], 404);
         }
-    
+
         return response()->json([
             'success' => true,
             'message' => 'List of all journals retrieved successfully',
             'data' => $jurnals,
         ], 200);
     }
+
 
 }
