@@ -29,67 +29,71 @@ class UserController extends Controller
 }
 
 
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string|confirmed',
-            'role' =>['required',Rule::in(['mentor', 'user']),],
-            'job_tittle' => 'required|string',
-            'notification_token' => 'nullable|string',
-        ]);
+public function register(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|string|confirmed',
+        'role' => ['required', Rule::in(['mentor', 'user'])],
+        'job_tittle' => 'required|string',
+        'notification_token' => 'nullable|string',
+    ]);
 
-        $user = new User([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role' => $request->role,
-            'job_tittle' => $request->job_tittle,
-        ]);
+    $user = new User([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => bcrypt($request->password),
+        'role' => $request->role,  // Save the role
+        'job_tittle' => $request->job_tittle,
+    ]);
+    $user->save();
+
+    return response()->json([
+        'message' => 'Successfully created user!',
+        'user' => $user->only(['id', 'name', 'email', 'role']),  // Include role in response
+    ], 201);
+}
+
+
+public function login(Request $request)
+{
+    $request->validate([
+        'login' => 'required|string',
+        'password' => 'required|string',
+        'notification_token' => 'nullable|string',
+    ], [
+        'login.required' => 'Email or username is required.',
+        'password.required' => 'Password is required.',
+    ]);
+    
+    $user = User::where('email', $request->login)
+                ->orWhere('name', $request->login)
+                ->first();
+
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'The provided credentials are incorrect.',
+        ], 401);
+    }
+    
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    // Update the notification token if provided
+    if ($request->filled('notification_token')) {
+        $user->notification_token = $request->notification_token;
         $user->save();
-
-        return response()->json([
-            'message' => 'Successfully created user!',
-            'user' => $user,
-        ], 201);
     }
 
-    public function login(Request $request)
-    {
-        $request->validate([
-            'login' => 'required|string',
-            'password' => 'required|string',
-            'notification_token' => 'nullable|string',
-        ], [
-            'login.required' => 'Email or username is required.',
-            'password.required' => 'Password is required.',
-        ]);
-    
-        $user = User::where('email', $request->login)
-                    ->orWhere('name', $request->login)
-                    ->first();
-    
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'The provided credentials are incorrect.',
-            ], 401);
-        }
-        $token = $user->createToken('auth_token')->plainTextToken;
-        
-        if ($request->filled('notification_token')) {
-            $user->notification_token = $request->notification_token;
-            $user->save();
-        }
-    
-        return response()->json([
-            'success' => true,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user->only(['id', 'name', 'email','role']), 
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'access_token' => $token,
+        'token_type' => 'Bearer',
+        'user' => $user->only(['id', 'name', 'email', 'role']),  // Include role in response
+    ]);
+}
+
 
     public function edit(Request $request, $id)
     {
