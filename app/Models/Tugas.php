@@ -21,6 +21,12 @@ class Tugas extends Model
         'status',
     ];
 
+    protected $casts = [
+        'jurnal_id' => 'integer',
+        'user_id' => 'integer',
+        'deadline' => 'datetime:Y-m-d H:i:s',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
