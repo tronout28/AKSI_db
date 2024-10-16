@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Attendance;
+use App\Models\Homeward;
+use App\Models\Permission;
+use App\Models\Sickness;
+use Carbon\Carbon;
 
 
 class AdminController extends Controller
@@ -91,7 +96,6 @@ class AdminController extends Controller
         ]);
 
         $admin = $request->user();
-
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time().'.'.$image->extension();
@@ -142,4 +146,46 @@ class AdminController extends Controller
             'message' => 'Password changed successfully.',
         ]);
     }
+    
+    public function getWeeklySummary()
+    {
+        $user = auth()->user();
+        $startOfWeek = Carbon::now()->startOfWeek(); // Awal minggu (Senin)
+        $endOfWeek = Carbon::now()->endOfWeek(); // Akhir minggu (Minggu)
+
+        // Ambil total absensi masuk (check-in) selama minggu ini
+        $totalAttendances = Attendance::where('user_id', $user->id)
+                                    ->whereBetween('check_in_time', [$startOfWeek, $endOfWeek])
+                                    ->count();
+
+        // Ambil total absensi pulang (check-out) selama minggu ini
+        $totalHomewards = Homeward::where('user_id', $user->id)
+                                ->whereBetween('check_out_time', [$startOfWeek, $endOfWeek])
+                                ->count();
+
+        // Ambil total izin yang diterima selama minggu ini
+        $totalPermissions = Permission::where('user_id', $user->id)
+                                    ->where('status', 'Diterima') // Status enum 'Diterima'
+                                    ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
+                                    ->count();
+
+        // Ambil total izin sakit yang diterima selama minggu ini
+        $totalSicknesses = Sickness::where('user_id', $user->id)
+                                ->where('status', 'Diterima') // Status enum 'Diterima'
+                                ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
+                                ->count();
+
+        // Kembalikan respons dengan hasil total dari semua kategori
+        return response()->json([
+            'success' => true,
+            'message' => 'Weekly summary of attendances, homewards, permissions, and sicknesses',
+            'data' => [
+                'total_attendances' => $totalAttendances, // Total absen masuk
+                'total_homewards' => $totalHomewards,     // Total absen pulang
+                'total_permissions' => $totalPermissions, // Total izin yang diterima
+                'total_sicknesses' => $totalSicknesses,   // Total izin sakit yang diterima
+            ],
+        ], 200);
+    }
+
 }
