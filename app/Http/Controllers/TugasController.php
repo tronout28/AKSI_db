@@ -14,7 +14,7 @@ class TugasController extends Controller
             'deadline' => 'required|date_format:Y-m-d H:i:s',
             'title' => 'required|string',
             'description' => 'required|string',
-            'image' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
         ]);
 
         $imageName = null;
