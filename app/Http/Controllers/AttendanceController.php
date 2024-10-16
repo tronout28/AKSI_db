@@ -119,23 +119,32 @@ class AttendanceController extends Controller
 
     public function getAttendanceByUserId($userId)
     {
-        $attendances = Attendance::with('user')->where('user_id', $userId)->get();
+        $today = \Carbon\Carbon::today(); 
 
+        $attendances = Attendance::with('user')
+                                ->where('user_id', $userId)
+                                ->whereDate('check_in_time', $today)
+                                ->get();
+
+        // Mengelompokkan absensi berdasarkan bulan (meskipun hanya hari ini, untuk mempertahankan struktur respons)
         $monthlyCount = $attendances->groupBy(function($attendance) {
             return Carbon::parse($attendance->check_in_time)->format('Y-m');
         })->map(function($group) {
             return $group->count();
         });
 
+        // Jika tidak ada data absensi untuk hari ini
         if ($attendances->isEmpty()) {
-            return response()->json(['message' => 'Tidak ada data absensi untuk user ini.'], 404);
+            return response()->json(['message' => 'Tidak ada data absensi untuk user ini hari ini.'], 404);
         }
 
+        // Mengembalikan respons JSON yang sama
         return response()->json([
-            'monthly_count' => $monthlyCount,
-            'attendances' => $attendances,
+            'monthly_count' => $monthlyCount, 
+            'attendances' => $attendances, // Data absensi untuk hari ini
         ], 200);
     }
+
 
     public function filterAttendances(Request $request)
     {

@@ -49,6 +49,8 @@ Route::group(['prefix' => 'admin'], function () {
     Route::get('/filter-attendances', [AttendanceController::class, 'filterAttendances']);
     Route::get('/chartattendance', [AttendanceController::class, 'getWeeklyAttendanceChart']);
 
+    Route::get('/getweekly', [AdminController::class, 'getWeeklySummary']);
+
     Route::post('/register', [AdminController::class, 'Adminregister']);
     Route::post('/login', [AdminController::class, 'Adminlogin']);
     Route::get('/details', [AdminController::class, 'Admindetails'])->middleware('auth:sanctum');
