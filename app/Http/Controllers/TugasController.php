@@ -15,16 +15,22 @@ class TugasController extends Controller
             'title' => 'required|string',
             'description' => 'required|string',
             'image' => 'nullable|string',
-            'status' => 'required|in:selesai,sedang dikerjakan',
         ]);
+
+        $imageName = null;
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension(); 
+            $image->move(public_path('tugas'), $imageName); 
+        }
 
         $tugas = new Tugas([
             'user_id' => $request->user_id,
             'deadline' => $request->deadline,
             'title' => $request->title,
             'description' => $request->description,
-            'image' => $request->image,
-            'status' => $request->status,
+            'image' => $request->$imageName,
         ]);
         $tugas->save();
 
@@ -46,6 +52,22 @@ class TugasController extends Controller
 
         return response()->json([
             'message' => 'Jurnal associated with Tugas successfully!',
+            'tugas' => $tugas,
+        ], 200);
+    }
+
+    public function updatestatusTugas(Request $request, $tugasId)
+    {
+        $request->validate([
+            'status' => 'required|in:selesai,sedang dikerjakan',
+        ]);
+
+        $tugas = Tugas::find($tugasId);
+        $tugas->status = $request->status;
+        $tugas->save();
+
+        return response()->json([
+            'message' => 'Tugas status updated successfully!',
             'tugas' => $tugas,
         ], 200);
     }
