@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Attendance;
 use App\Models\Sickness;
+use Illuminate\Validation\Rule;
 use App\Models\Permission;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
@@ -34,6 +35,7 @@ class UserController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|confirmed',
+            'role' =>['required',Rule::in(['mentor', 'user']),],
             'job_tittle' => 'required|string',
             'notification_token' => 'nullable|string',
         ]);
@@ -42,6 +44,7 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
+            'role' => $request->role,
             'job_tittle' => $request->job_tittle,
         ]);
         $user->save();
@@ -84,7 +87,7 @@ class UserController extends Controller
             'success' => true,
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user->only(['id', 'name', 'email']), 
+            'user' => $user->only(['id', 'name', 'email','role']), 
         ]);
     }
 
