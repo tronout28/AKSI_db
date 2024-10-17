@@ -22,7 +22,16 @@ class TugasController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->extension(); 
-            $image->move(public_path('tugas'), $imageName); 
+            
+            // Check if there is already an image for the user
+            $existingTugas = Tugas::where('user_id', $request->user_id)->first();
+            if ($existingTugas && $existingTugas->image && file_exists(public_path('tugas/'.$existingTugas->image))) {
+                // Delete the old image if it exists
+                unlink(public_path('tugas/' . $existingTugas->image));
+            }
+
+            // Move the new image to the 'tugas' directory
+            $image->move(public_path('tugas'), $imageName);
         }
 
         $tugas = new Tugas([
