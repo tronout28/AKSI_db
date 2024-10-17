@@ -232,4 +232,53 @@ class AdminController extends Controller
             'qr_content' => $qrCodeContent,
         ]);
     }
+
+    public function generateDailyQrCodeForCheckout()
+    {
+        $today = Carbon::today()->format('Y-m-d');
+        $qrCodeContent = 'absensi_pulang_' . $today; // QR code content for check-out
+
+        // Set the directory and filename
+        $directory = public_path('qrcodes/');
+        $filename = 'qrcode_pulang_' . $today . '.png';
+        $filePath = $directory . $filename;
+
+        // Buat direktori jika belum ada
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        // Check if today's QR code for check-out already exists
+        if (file_exists($filePath)) {
+            // QR code for check-out has already been generated, return the existing one
+            $imageUrl = asset('qrcodes/' . $filename);
+            return response()->json([
+                'message' => 'QR Code for check-out today has already been generated',
+                'image_url' => $imageUrl,
+                'qr_content' => $qrCodeContent,
+            ]);
+        }
+
+        // Delete old QR codes for check-out (from previous days)
+        $files = glob($directory . 'qrcode_pulang_*.png'); // Get all check-out QR code files
+        foreach ($files as $file) {
+            if (basename($file) !== $filename) {
+                unlink($file); // Delete any existing check-out QR codes except today's QR code
+            }
+        }
+
+        // Generate the new QR code for check-out and save it
+        $qrImage = QrCode::format('png')->size(300)->generate($qrCodeContent);
+        file_put_contents($filePath, $qrImage);
+
+        // Generate the public URL for the QR code
+        $imageUrl = asset('qrcodes/' . $filename);
+
+        return response()->json([
+            'message' => 'QR Code for check-out today generated successfully',
+            'image_url' => $imageUrl,
+            'qr_content' => $qrCodeContent,
+        ]);
+    }
+
 }

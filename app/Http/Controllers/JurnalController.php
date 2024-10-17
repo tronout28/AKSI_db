@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Services\FirebaseService;
 use App\Models\Jurnal;
+use App\Models\User;
 
 class JurnalController extends Controller
 {
@@ -52,22 +53,25 @@ class JurnalController extends Controller
 
     public function input(Request $request)
     {
-        $user = auth()->user();
-        
+        $user = auth()->user(); // Mendapatkan user yang sedang login
+    
+        // Validasi request
         $request->validate([
             'name_title' => 'required|string',
             'activity' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
         ]);
-
+    
         $imageName = null;
-
+    
+        // Jika ada file gambar yang diupload, simpan gambarnya
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->extension(); 
             $image->move(public_path('jurnal'), $imageName); 
         }
-
+    
+        // Buat entri jurnal baru
         $jurnal = new Jurnal([
             'user_id' => $user->id,
             'name_title' => $request->name_title,
@@ -75,17 +79,39 @@ class JurnalController extends Controller
             'image' => $imageName, 
         ]);
         $jurnal->save();
-
-        if ($jurnal) {
-            $this->firebaseService->sendNotification($user->notification_token, 'Jurnal baru telah dibuat', 'Jurnal anda sudah dikirim ke guru', '');
+    
+        // Cek role user
+        if ($user->role === 'mentor') {
+            // Kirim notifikasi ke semua mentor
+            $mentors = User::where('role', 'mentor')->get();
+    
+            foreach ($mentors as $mentor) {
+                // Kirim notifikasi ke masing-masing mentor
+                $this->firebaseService->sendNotification(
+                    $mentor->notification_token, 
+                    'Jurnal baru telah dibuat', 
+                    'Jurnal baru sudah dikirim oleh mentor ' . $user->name, 
+                    ''
+                );
+            }
+        } else if ($user->role === 'user') {
+            // Kirim notifikasi hanya ke user yang membuat jurnal
+            $this->firebaseService->sendNotification(
+                $user->notification_token, 
+                'Jurnal baru telah dibuat', 
+                'Jurnal anda sudah dikirim ke guru', 
+                ''
+            );
         }
-
+    
+        // Response JSON saat jurnal berhasil dibuat
         return response()->json([
             'success' => true,
             'message' => 'Jurnal created',
             'data' => $jurnal,
         ], 201);
     }
+    
 
 
     public function update(Request $request, $id)

@@ -4,9 +4,20 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Tugas;
+use App\Services\FirebaseService;
+use App\Models\User;
+
 
 class TugasController extends Controller
 {
+
+    protected $firebaseService;
+
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function storeTugas(Request $request) 
     {
         $request->validate([
@@ -45,6 +56,11 @@ class TugasController extends Controller
             'image' => $imageUrl, // Store the full image URL directly
         ]);
         $tugas->save();
+
+        $user = User::find($request->user_id);
+        if($tugas){
+            $this->firebaseService->sendNotification($user->notification_token, 'Tugas Baru', 'Anda memiliki tugas baru', $imageUrl);
+        }
 
         return response()->json([
             'message' => 'Tugas created successfully!',
