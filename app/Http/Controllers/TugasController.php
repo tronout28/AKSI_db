@@ -7,7 +7,7 @@ use App\Models\Tugas;
 
 class TugasController extends Controller
 {
-    public function storeTugas(Request $request)
+    public function storeTugas(Request $request) 
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -34,12 +34,15 @@ class TugasController extends Controller
             $image->move(public_path('tugas'), $imageName);
         }
 
+        // Generate the full image URL (if there is an image)
+        $imageUrl = $imageName ? asset('tugas/' . $imageName) : null;
+
         $tugas = new Tugas([
             'user_id' => $request->user_id,
             'deadline' => $request->deadline,
             'title' => $request->title,
             'description' => $request->description,
-            'image' => $imageName,
+            'image' => $imageUrl, // Store the full image URL directly
         ]);
         $tugas->save();
 
@@ -48,6 +51,7 @@ class TugasController extends Controller
             'tugas' => $tugas,
         ], 201);
     }
+
 
     public function associateJurnalToTugas(Request $request, $tugasId)
     {
