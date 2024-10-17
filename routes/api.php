@@ -60,6 +60,7 @@ Route::group(['prefix' => 'admin'], function () {
     Route::post('/change-password', [AdminController::class, 'Adminchangepassword'])->middleware('auth:sanctum');
 
     Route::get('/generate-qr', [AdminController::class, 'generateDailyQrCode']);
+    Route::get('/generate-pulang', [AdminController::class, 'generateDailyQrCodeForCheckout']);
 });
 
 Route::group(['prefix' => 'jurnal'], function () {

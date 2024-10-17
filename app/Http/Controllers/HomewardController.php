@@ -26,8 +26,8 @@ class HomewardController extends Controller
     {
         $user = Auth::user();
         $today = Carbon::today()->format('Y-m-d');
-        $scannedQrContent = $request->input('qr_content');
-        $expectedQrContent = 'absensi_' . $today;
+        $scannedQrContent = $request->input('qr_content'); // QR yang discan oleh user
+        $expectedQrContent = 'absensi_pulang_' . $today; // QR code yang seharusnya sesuai dengan hari ini
 
         // Cek apakah QR code yang discan valid untuk hari ini
         if ($scannedQrContent !== $expectedQrContent) {
@@ -43,7 +43,18 @@ class HomewardController extends Controller
 
         if (!$existingAttendance) {
             return response()->json([
-                'message' => 'Anda belum absen masuk hari ini!',
+                'message' => 'Anda belum absen masuk hari ini, tidak bisa absen pulang!',
+            ], 403);
+        }
+
+        // Cek apakah user sudah absen pulang hari ini
+        $existingHomeward = Homeward::where('user_id', $user->id)
+            ->whereDate('check_out_time', $today)
+            ->first();
+
+        if ($existingHomeward) {
+            return response()->json([
+                'message' => 'Anda sudah absen pulang hari ini!',
             ], 403);
         }
 
@@ -57,21 +68,30 @@ class HomewardController extends Controller
             $checkOutTime = Carbon::now('Asia/Jakarta');
             $formattedCheckOutTime = $checkOutTime->format('h:i A');
 
-            $existingAttendance->update([
+            $homeward = Homeward::create([
+                'user_id' => $user->id,
+                'latitude' => $userLat,
+                'longitude' => $userLong,
                 'check_out_time' => $checkOutTime,
                 'formatted_check_out_time' => $formattedCheckOutTime,
             ]);
 
+            if ($homeward) {
+                $this->firebaseService->sendNotification($user->notification_token, 'Absensi pulang berhasil', 'Absensi pulang anda berhasil dicatat', '');
+            }
+
             return response()->json([
                 'message' => 'Absensi pulang berhasil!',
-                'attendance' => $existingAttendance,
+                'homeward' => $homeward,
             ], 200);
         } else {
             return response()->json([
                 'message' => 'Anda berada di luar area kantor!',
+                $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen karena berada di luar area kantor', ''),
             ], 403);
         }
     }
+
 
 
     public function getAllHomeward()
