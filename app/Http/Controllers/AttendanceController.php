@@ -23,27 +23,35 @@ class AttendanceController extends Controller
         $this->firebaseService = $firebaseService;
     }
 
-    public function store(Request $request) 
+    public function scanQrForCheckIn(Request $request)
     {
         $user = Auth::user();
-        $today = Carbon::today('Asia/Jakarta');
+        $today = Carbon::today()->format('Y-m-d');
+        $scannedQrContent = $request->input('qr_content'); // QR yang discan oleh user
+        $expectedQrContent = 'absensi_' . $today; // QR code yang seharusnya sesuai dengan hari ini
 
+        // Cek apakah QR code yang discan valid untuk hari ini
+        if ($scannedQrContent !== $expectedQrContent) {
+            return response()->json([
+                'message' => 'Invalid QR code for today!',
+            ], 403);
+        }
+
+        // Cek apakah user sudah absen masuk hari ini
         $existingAttendance = Attendance::where('user_id', $user->id)
             ->whereDate('check_in_time', $today)
             ->first();
 
         if ($existingAttendance) {
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen hari ini', 'Anda tidak bisa absen lagi karena sudah absen hari ini', '');
             return response()->json([
-                'message' => 'Anda sudah melakukan absensi hari ini.',
+                'message' => 'Anda sudah absen masuk hari ini!',
             ], 403);
         }
 
-        // Cek apakah ada izin sakit atau izin lainnya dengan status "Belum Diproses" atau "Diterima"
         $sickness = Sickness::where('user_id', $user->id)
-            ->whereDate('created_at', $today)
-            ->whereIn('allowed', ['Belum Diproses', 'Diterima']) // Memeriksa status sakit
-            ->first();
+        ->whereDate('created_at', $today)
+        ->whereIn('allowed', ['Belum Diproses', 'Diterima']) // Memeriksa status sakit
+        ->first();
 
         $permission = Permission::where('user_id', $user->id)
             ->whereDate('created_at', $today)
@@ -58,17 +66,15 @@ class AttendanceController extends Controller
             ], 403);
         }
 
-        // Cek jarak dan buat record absensi jika memenuhi syarat
-        $userLat = $request->latitude;
-        $userLong = $request->longitude;
+        // Cek jarak user dengan kantor
+        $userLat = $request->input('latitude');
+        $userLong = $request->input('longitude');
         $distance = $this->calculateDistance($this->officeLat, $this->officeLong, $userLat, $userLong);
 
         if ($distance <= $this->maxDistance) {
+            // Simpan absensi
             $checkInTime = Carbon::now('Asia/Jakarta');
             $formattedCheckInTime = $checkInTime->format('h:i A');
-
-            // Cek apakah terlambat
-            $lateCheckIn = $checkInTime->gt(Carbon::today('Asia/Jakarta')->setTime(8, 0)) ? 'Terlambat' : 'Tepat Waktu';
 
             $attendance = Attendance::create([
                 'user_id' => Auth::id(),
@@ -76,31 +82,16 @@ class AttendanceController extends Controller
                 'longitude' => $userLong,
                 'check_in_time' => $checkInTime,
                 'formatted_check_in_time' => $formattedCheckInTime,
-                'status' => $lateCheckIn,
             ]);
 
-            // Kirim notifikasi berdasarkan status absensi
-            if ($attendance) {
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen', 'Anda telah absen dan berada di area kantor', '');
-            } elseif ($lateCheckIn == 'Terlambat') {
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda terlambat absen', 'Anda telah absen dan terlambat masuk kantor', '');
-            }
-
             return response()->json([
-                'message' => 'Absensi berhasil!',
-                'status' => $lateCheckIn,
-                'formatted_check_in_time' => $formattedCheckInTime,
+                'message' => 'Absensi masuk berhasil!',
                 'attendance' => $attendance,
-                'user' => [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'job_title' => $user->job_title,
-                ]
             ], 200);
         } else {
-            // Jika di luar area kantor
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen karena berada di luar area kantor', '');
-            return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
+            return response()->json([
+                'message' => 'Anda berada di luar area kantor!',
+            ], 403);
         }
     }
 

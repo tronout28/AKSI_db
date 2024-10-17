@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -66,6 +68,12 @@ return [
     */
 
     'timezone' => env('APP_TIMEZONE', 'UTC'),
+
+    'aliases' => [
+        'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class,
+
+    ],
+
 
     /*
     |--------------------------------------------------------------------------

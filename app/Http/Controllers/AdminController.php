@@ -9,6 +9,8 @@ use App\Models\Attendance;
 use App\Models\Homeward;
 use App\Models\Permission;
 use App\Models\Sickness;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 
@@ -183,4 +185,51 @@ class AdminController extends Controller
         ], 200);
     }
 
+    public function generateDailyQrCode()
+    {
+        $today = Carbon::today()->format('Y-m-d');
+        $qrCodeContent = 'absensi_' . $today; // QR code content
+
+        // Set the directory and filename
+        $directory = public_path('qrcodes/');
+        $filename = 'qrcode_' . $today . '.png';
+        $filePath = $directory . $filename;
+
+        // Buat direktori jika belum ada
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        // Check if today's QR code already exists
+        if (file_exists($filePath)) {
+            // QR code for today already generated, return the existing one
+            $imageUrl = asset('qrcodes/' . $filename);
+            return response()->json([
+                'message' => 'QR Code for today has already been generated',
+                'image_url' => $imageUrl,
+                'qr_content' => $qrCodeContent,
+            ]);
+        }
+
+        // Delete old QR codes (from previous days)
+        $files = glob($directory . 'qrcode_*.png'); // Get all QR code files
+        foreach ($files as $file) {
+            if (basename($file) !== $filename) {
+                unlink($file); // Delete any existing QR code except today's QR code
+            }
+        }
+
+        // Generate the new QR code and save it
+        $qrImage = QrCode::format('png')->size(300)->generate($qrCodeContent);
+        file_put_contents($filePath, $qrImage);
+
+        // Generate the public URL for the QR code
+        $imageUrl = asset('qrcodes/' . $filename);
+
+        return response()->json([
+            'message' => 'QR Code for today generated successfully',
+            'image_url' => $imageUrl,
+            'qr_content' => $qrCodeContent,
+        ]);
+    }
 }

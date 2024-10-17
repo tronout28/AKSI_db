@@ -58,6 +58,8 @@ Route::group(['prefix' => 'admin'], function () {
     Route::post('/logout', [AdminController::class, 'Adminlogout'])->middleware('auth:sanctum');
     Route::put('/update-image', [AdminController::class, 'Adminupdateimage'])->middleware('auth:sanctum');
     Route::post('/change-password', [AdminController::class, 'Adminchangepassword'])->middleware('auth:sanctum');
+
+    Route::get('/generate-qr', [AdminController::class, 'generateDailyQrCode']);
 });
 
 Route::group(['prefix' => 'jurnal'], function () {
@@ -76,13 +78,13 @@ Route::group(['prefix' => 'notifications', 'middleware' => ['auth:sanctum']], fu
 });
 
 Route::group(['prefix' => 'attendance', 'middleware' => 'auth:sanctum'], function () {
-    Route::post('/', [AttendanceController::class, 'store']);
+    Route::post('/', [AttendanceController::class, 'scanQrForCheckIn']);
     Route::get('/get-all', [AttendanceController::class, 'getAllAttendances']);
     Route::get('/get-user/{userId}', [AttendanceController::class, 'getAttendanceByUserId']);
 });
 
 Route::group(['prefix' => 'homeward', 'middleware' => 'auth:sanctum'], function () {
-    Route::post('/store', [HomewardController::class, 'store']);
+    Route::post('/store', [HomewardController::class, 'scanQrForCheckOut']);
     Route::get('/get-all', [HomewardController::class, 'getAllHomeward']);
     Route::get('/get-user/{userId}', [HomewardController::class, 'getHomewardByUserId']);
 });

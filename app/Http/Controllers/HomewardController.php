@@ -22,59 +22,54 @@ class HomewardController extends Controller
         $this->firebaseService = $firebaseService;
     }
 
-    public function store(Request $request)
+    public function scanQrForCheckOut(Request $request)
     {
         $user = Auth::user();
-        $today = Carbon::today('Asia/Jakarta');
+        $today = Carbon::today()->format('Y-m-d');
+        $scannedQrContent = $request->input('qr_content');
+        $expectedQrContent = 'absensi_' . $today;
 
-        // Cek apakah pengguna sudah absen masuk hari ini
-        $existingAttendance = Attendance::where('user_id', $user->id)->whereDate('check_in_time', $today)->first();
-
-        // Jika pengguna belum absen masuk, blokir absensi pulang
-        if (!$existingAttendance) {
+        // Cek apakah QR code yang discan valid untuk hari ini
+        if ($scannedQrContent !== $expectedQrContent) {
             return response()->json([
-                'message' => 'Anda belum melakukan absensi masuk, tidak bisa absen pulang.',
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda belum absen masuk', 'Anda tidak bisa absen pulang karena belum absen masuk', ''),
+                'message' => 'Invalid QR code for today!',
             ], 403);
         }
 
-        $userLat = $request->latitude;
-        $userLong = $request->longitude;
+        // Cek apakah user sudah absen masuk hari ini
+        $existingAttendance = Attendance::where('user_id', $user->id)
+            ->whereDate('check_in_time', $today)
+            ->first();
+
+        if (!$existingAttendance) {
+            return response()->json([
+                'message' => 'Anda belum absen masuk hari ini!',
+            ], 403);
+        }
+
+        // Cek jarak user dengan kantor
+        $userLat = $request->input('latitude');
+        $userLong = $request->input('longitude');
         $distance = $this->calculateDistance($this->officeLat, $this->officeLong, $userLat, $userLong);
 
-        // Jika berada dalam jarak yang diperbolehkan dari kantor
         if ($distance <= $this->maxDistance) {
+            // Simpan absensi pulang
             $checkOutTime = Carbon::now('Asia/Jakarta');
             $formattedCheckOutTime = $checkOutTime->format('h:i A');
 
-            // Buat absensi pulang baru setiap kali user absen
-            $homeward = Homeward::create([
-                'user_id' => Auth::id(),
-                'latitude' => $userLat,
-                'longitude' => $userLong,
+            $existingAttendance->update([
                 'check_out_time' => $checkOutTime,
                 'formatted_check_out_time' => $formattedCheckOutTime,
             ]);
 
-            if ($homeward) {
-                $this->firebaseService->sendNotification($user->notification_token, 'Anda sudah absen pulang', 'Anda telah absen pulang, Hati-hati di jalan!', '');
-            }
-
             return response()->json([
                 'message' => 'Absensi pulang berhasil!',
-                'formatted_check_out_time' => $formattedCheckOutTime,
-                'homeward' => $homeward,
-                'user' => [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'job_title' => $user->job_title,
-                ]
+                'attendance' => $existingAttendance,
             ], 200);
-
         } else {
-            // Jika di luar area kantor
-            $this->firebaseService->sendNotification($user->notification_token, 'Anda berada di luar area kantor', 'Anda tidak bisa absen pulang karena berada di luar area kantor', '');
-            return response()->json(['message' => 'Anda berada di luar area kantor.'], 403);
+            return response()->json([
+                'message' => 'Anda berada di luar area kantor!',
+            ], 403);
         }
     }
 
