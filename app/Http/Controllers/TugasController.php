@@ -88,7 +88,7 @@ class TugasController extends Controller
     public function updatestatusTugas(Request $request, $tugasId)
     {
         $request->validate([
-            'status' => 'required|in:selesai,sedang dikerjakan',
+            'status' => 'required|in:selesai,sedang dikerjakan,terkumpul',
         ]);
 
         $tugas = Tugas::find($tugasId);
@@ -120,7 +120,14 @@ class TugasController extends Controller
 
     public function getAllTugas()
     {
-        $tugas = Tugas::with('user')->get();
+        $user = auth()->user(); 
+        
+        if ($user->role === 'mentor') {
+            $tugas = Tugas::with('user')->get();
+        }
+        else if ($user->role === 'user') {
+            $tugas = Tugas::with('user')->where('status', '!=', 'terkirim')->get();
+        }
 
         if ($tugas->isEmpty()) {
             return response()->json([
@@ -133,5 +140,4 @@ class TugasController extends Controller
             'tugas' => $tugas,
         ], 200);
     }
-
 }

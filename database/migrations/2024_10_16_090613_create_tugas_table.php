@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('description');
             $table->string('image')->nullable();
-            $table->enum('status',['selesai',  'sedang dikerjakan'])->default('sedang dikerjakan');
+            $table->enum('status',['selesai',  'sedang dikerjakan','terkumpul'])->default('sedang dikerjakan');
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
