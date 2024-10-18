@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('jurnal_id')->nullable(); 
-            $table->datetime('deadline');
+            $table->date('deadline');
             $table->string('title');
             $table->string('description');
             $table->string('image')->nullable();

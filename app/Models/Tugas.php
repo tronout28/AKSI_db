@@ -24,7 +24,7 @@ class Tugas extends Model
     protected $casts = [
         'jurnal_id' => 'integer',
         'user_id' => 'integer',
-        'deadline' => 'datetime:Y-m-d H:i:s',
+        'deadline' => 'datetime:Y-m-d ',
     ];
 
     public function user()
