@@ -76,7 +76,8 @@ class TugasController extends Controller
         ]);
 
         $tugas = Tugas::findOrFail($tugasId);
-        $tugas->jurnal_id = $request->jurnal_id; // Associate the jurnal
+        $tugas->jurnal_id = $request->jurnal_id; 
+        $tugas->status = 'terkumpul';
         $tugas->save();
 
         return response()->json([
