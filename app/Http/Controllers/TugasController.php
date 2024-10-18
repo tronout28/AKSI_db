@@ -77,7 +77,7 @@ class TugasController extends Controller
 
         $tugas = Tugas::findOrFail($tugasId);
         $tugas->jurnal_id = $request->jurnal_id; 
-        $tugas->status = 'terkumpul';
+        $tugas->status = 'selesai'; 
         $tugas->save();
 
         return response()->json([
@@ -104,8 +104,10 @@ class TugasController extends Controller
 
     public function getUserTugas($userId)
     {
-        // Fetch all tasks for the specific user and include user data
-        $tugas = Tugas::with('user')->where('user_id', $userId)->get();
+        $tugas = Tugas::with('user')
+            ->where('user_id', $userId)
+            ->where('status', '!=', 'selesai') 
+            ->get();
 
         if ($tugas->isEmpty()) {
             return response()->json([
@@ -119,16 +121,10 @@ class TugasController extends Controller
         ], 200);
     }
 
+
     public function getAllTugas()
     {
-        $user = auth()->user(); 
-        
-        if ($user->role === 'mentor') {
-            $tugas = Tugas::with('user')->get();
-        }
-        else if ($user->role === 'user') {
-            $tugas = Tugas::with('user')->where('status', '!=', 'terkirim')->get();
-        }
+        $tugas = Tugas::with('user')->get();
 
         if ($tugas->isEmpty()) {
             return response()->json([
@@ -141,4 +137,5 @@ class TugasController extends Controller
             'tugas' => $tugas,
         ], 200);
     }
+
 }
