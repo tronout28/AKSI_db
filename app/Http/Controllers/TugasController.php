@@ -22,7 +22,7 @@ class TugasController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'deadline' => 'required|date_format:Y-m-d H:i:s',
+            'deadline' => 'required|date_format:Y-m-d',
             'title' => 'required|string',
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5000',
